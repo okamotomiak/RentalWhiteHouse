@@ -201,11 +201,11 @@ Thank you for your interest in our community!
         .setHelpText('Upload recent pay stub, bank statement, or employment letter (PDF, JPG, PNG)')
         .setFolderName('Belvedere White House Rental - Applications');
     } else {
-      // Fallback for personal accounts where file uploads are not supported
+      // Fallback when file uploads are unavailable
       form.addParagraphTextItem()
-        .setTitle('Proof of Income (Link) *')
+        .setTitle('Proof of Income *')
         .setRequired(true)
-        .setHelpText('Provide a link to a proof of income document in Google Drive or other cloud storage');
+        .setHelpText('Describe or link your proof of income document');
     }
     
     // Agreement
@@ -221,8 +221,14 @@ Thank you for your interest in our community!
     form.setDestination(FormApp.DestinationType.SPREADSHEET, SpreadsheetApp.getActiveSpreadsheet().getId());
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const respSheetName = form.getTitle() + ' (Responses)';
-    const respSheet = ss.getSheetByName(respSheetName);
-    if (respSheet) respSheet.setName(CONFIG.SHEETS.APPLICATIONS);
+    let respSheet = ss.getSheetByName(respSheetName);
+    if (!respSheet) {
+      respSheet = ss.getSheets().find(s => /^Form Responses/.test(s.getName()));
+    }
+    if (respSheet) {
+      respSheet.setName(CONFIG.SHEETS.APPLICATIONS);
+      SheetManager.cleanHeaderAsterisks(respSheet);
+    }
 
     return form;
   },
@@ -340,8 +346,14 @@ Thank you for being a valued resident!
     form.setDestination(FormApp.DestinationType.SPREADSHEET, SpreadsheetApp.getActiveSpreadsheet().getId());
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const respName = form.getTitle() + ' (Responses)';
-    const responseSheet = ss.getSheetByName(respName);
-    if (responseSheet) responseSheet.setName(CONFIG.SHEETS.MOVEOUTS);
+    let responseSheet = ss.getSheetByName(respName);
+    if (!responseSheet) {
+      responseSheet = ss.getSheets().find(s => /^Form Responses/.test(s.getName()));
+    }
+    if (responseSheet) {
+      responseSheet.setName(CONFIG.SHEETS.MOVEOUTS);
+      SheetManager.cleanHeaderAsterisks(responseSheet);
+    }
 
     return form;
   },
