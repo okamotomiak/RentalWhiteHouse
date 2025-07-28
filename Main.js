@@ -705,8 +705,8 @@ function initializeCompleteSystem() {
     // Show progress
     ui.alert('Setting up system... This may take a few moments.');
     
-    // Initialize all sheets
-    SheetManager.initializeAllSheets();
+    // Initialize core sheets (exclude form response sheets)
+    SheetManager.initializeCoreSheets();
     
     // Setup triggers
     TriggerManager.setupAllTriggers();
@@ -1043,6 +1043,9 @@ function sendMonthlyInvoices() { TenantManager.sendMonthlyInvoices(); }
 function markPaymentReceived() { TenantManager.markPaymentReceived(); }
 function processMoveIn() { TenantManager.processMoveIn(); }
 function processMoveOut() { TenantManager.processMoveOut(); }
+function recordTenantPayment(row, date) { TenantManager.recordTenantPayment(row, date); }
+function completeMoveIn(data) { TenantManager.completeMoveIn(data); }
+function completeMoveOut(data) { TenantManager.completeMoveOut(data); }
 
 // Guest management wrappers
 function showTodayGuestActivity() { GuestManager.showTodayGuestActivity(); }
@@ -1062,6 +1065,14 @@ function showMaintenanceRequests() { MaintenanceManager.showMaintenanceRequests(
 function createUrgentMaintenanceRequest() { MaintenanceManager.createUrgentMaintenanceRequest(); }
 function showMaintenanceDashboard() { MaintenanceManager.showMaintenanceDashboard(); }
 function generateMaintenanceCostReport() { MaintenanceManager.generateMaintenanceCostReport(); }
+
+// Financial functions
+function generateMonthlyFinancialReport() { FinancialManager.generateMonthlyFinancialReport(); }
+function showRevenueAnalysis() { FinancialManager.showRevenueAnalysis(); }
+function showOccupancyAnalytics() { FinancialManager.showOccupancyAnalytics(); }
+function showProfitabilityDashboard() { FinancialManager.showProfitabilityDashboard(); }
+function generateTaxReport() { FinancialManager.generateTaxReport(); }
+function exportFinancialData() { FinancialManager.exportFinancialData(); }
 
 // Initialize system when script loads
 Logger.log('Parsonage Management System v2.0 loaded successfully');

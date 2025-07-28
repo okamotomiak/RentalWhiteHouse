@@ -109,19 +109,20 @@ Thank you for your interest in our community!
       .setRequired(true)
       .setHelpText('When would you like to move in?');
     
-    form.addMultipleChoiceItem()
+    const roomItem = form.addMultipleChoiceItem();
+    roomItem
       .setTitle('Preferred Room *')
       .setRequired(true)
       .setChoices([
-        form.createChoice('Any available room'),
-        form.createChoice('Room 101'),
-        form.createChoice('Room 102'),
-        form.createChoice('Room 103'),
-        form.createChoice('Room 104'),
-        form.createChoice('Room 201'),
-        form.createChoice('Room 202'),
-        form.createChoice('Room 203'),
-        form.createChoice('Room 204')
+        roomItem.createChoice('Any available room'),
+        roomItem.createChoice('Room 101'),
+        roomItem.createChoice('Room 102'),
+        roomItem.createChoice('Room 103'),
+        roomItem.createChoice('Room 104'),
+        roomItem.createChoice('Room 201'),
+        roomItem.createChoice('Room 202'),
+        roomItem.createChoice('Room 203'),
+        roomItem.createChoice('Room 204')
       ])
       .setHelpText('Select your preferred room or any available');
     
@@ -129,17 +130,18 @@ Thank you for your interest in our community!
     form.addSectionHeaderItem()
       .setTitle('Employment Information');
     
-    form.addMultipleChoiceItem()
+    const employmentItem = form.addMultipleChoiceItem();
+    employmentItem
       .setTitle('Employment Status *')
       .setRequired(true)
       .setChoices([
-        form.createChoice('Full-time employed'),
-        form.createChoice('Part-time employed'),
-        form.createChoice('Self-employed'),
-        form.createChoice('Student'),
-        form.createChoice('Retired'),
-        form.createChoice('Unemployed'),
-        form.createChoice('Other')
+        employmentItem.createChoice('Full-time employed'),
+        employmentItem.createChoice('Part-time employed'),
+        employmentItem.createChoice('Self-employed'),
+        employmentItem.createChoice('Student'),
+        employmentItem.createChoice('Retired'),
+        employmentItem.createChoice('Unemployed'),
+        employmentItem.createChoice('Other')
       ]);
     
     form.addTextItem()
@@ -198,16 +200,21 @@ Thank you for your interest in our community!
       .setFolderName('Belvedere White House Rental - Applications');
     
     // Agreement
-    form.addCheckboxItem()
+    const agreementItem = form.addCheckboxItem();
+    agreementItem
       .setTitle('Application Agreement *')
       .setRequired(true)
       .setChoices([
-        form.createChoice('I certify that all information provided is true and complete. I understand that false information may result in denial of my application.')
+        agreementItem.createChoice('I certify that all information provided is true and complete. I understand that false information may result in denial of my application.')
       ]);
     
-    // Connect form to spreadsheet
+    // Connect form to spreadsheet and rename response sheet
     form.setDestination(FormApp.DestinationType.SPREADSHEET, SpreadsheetApp.getActiveSpreadsheet().getId());
-    
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const respSheetName = form.getTitle() + ' (Responses)';
+    const respSheet = ss.getSheetByName(respSheetName);
+    if (respSheet) respSheet.setName(CONFIG.SHEETS.APPLICATIONS);
+
     return form;
   },
   
@@ -247,18 +254,19 @@ Thank you for being a valued resident!
       .setTitle('Phone Number *')
       .setRequired(true);
     
-    form.addMultipleChoiceItem()
+    const roomNumberItem = form.addMultipleChoiceItem();
+    roomNumberItem
       .setTitle('Room Number *')
       .setRequired(true)
       .setChoices([
-        form.createChoice('Room 101'),
-        form.createChoice('Room 102'),
-        form.createChoice('Room 103'),
-        form.createChoice('Room 104'),
-        form.createChoice('Room 201'),
-        form.createChoice('Room 202'),
-        form.createChoice('Room 203'),
-        form.createChoice('Room 204')
+        roomNumberItem.createChoice('Room 101'),
+        roomNumberItem.createChoice('Room 102'),
+        roomNumberItem.createChoice('Room 103'),
+        roomNumberItem.createChoice('Room 104'),
+        roomNumberItem.createChoice('Room 201'),
+        roomNumberItem.createChoice('Room 202'),
+        roomNumberItem.createChoice('Room 203'),
+        roomNumberItem.createChoice('Room 204')
       ]);
     
     // Move-Out Details
@@ -275,17 +283,18 @@ Thank you for being a valued resident!
       .setRequired(true)
       .setHelpText('Complete address where security deposit refund should be mailed');
     
-    form.addMultipleChoiceItem()
+    const reasonItem = form.addMultipleChoiceItem();
+    reasonItem
       .setTitle('Primary Reason for Moving *')
       .setRequired(true)
       .setChoices([
-        form.createChoice('Job relocation'),
-        form.createChoice('Buying a home'),
-        form.createChoice('Moving closer to family'),
-        form.createChoice('Found different housing'),
-        form.createChoice('Financial reasons'),
-        form.createChoice('Dissatisfied with property'),
-        form.createChoice('Other')
+        reasonItem.createChoice('Job relocation'),
+        reasonItem.createChoice('Buying a home'),
+        reasonItem.createChoice('Moving closer to family'),
+        reasonItem.createChoice('Found different housing'),
+        reasonItem.createChoice('Financial reasons'),
+        reasonItem.createChoice('Dissatisfied with property'),
+        reasonItem.createChoice('Other')
       ]);
     
     form.addParagraphTextItem()
@@ -307,19 +316,24 @@ Thank you for being a valued resident!
     form.addParagraphTextItem()
       .setTitle('What could we improve?');
     
-    form.addMultipleChoiceItem()
+    const recommendItem = form.addMultipleChoiceItem();
+    recommendItem
       .setTitle('Would you recommend us to others?')
       .setChoices([
-        form.createChoice('Definitely'),
-        form.createChoice('Probably'),
-        form.createChoice('Not sure'),
-        form.createChoice('Probably not'),
-        form.createChoice('Definitely not')
+        recommendItem.createChoice('Definitely'),
+        recommendItem.createChoice('Probably'),
+        recommendItem.createChoice('Not sure'),
+        recommendItem.createChoice('Probably not'),
+        recommendItem.createChoice('Definitely not')
       ]);
     
-    // Connect form to spreadsheet
+    // Connect form to spreadsheet and rename response sheet
     form.setDestination(FormApp.DestinationType.SPREADSHEET, SpreadsheetApp.getActiveSpreadsheet().getId());
-    
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const respName = form.getTitle() + ' (Responses)';
+    const responseSheet = ss.getSheetByName(respName);
+    if (responseSheet) responseSheet.setName(CONFIG.SHEETS.MOVEOUTS);
+
     return form;
   },
   
@@ -330,12 +344,14 @@ Thank you for being a valued resident!
     try {
       // Create triggers for form submissions
       ScriptApp.newTrigger('processTenantApplicationSubmission')
+        .forForm(tenantForm)
         .onFormSubmit()
-        .onCreate(tenantForm.getId());
-      
+        .create();
+
       ScriptApp.newTrigger('processMoveOutRequestSubmission')
+        .forForm(moveOutForm)
         .onFormSubmit()
-        .onCreate(moveOutForm.getId());
+        .create();
       
       Logger.log('Form triggers created successfully');
       
