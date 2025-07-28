@@ -715,6 +715,8 @@ function initializeCompleteSystem() {
     DataManager.createSampleData();
     DataManager.createSampleGuestBookings();
     DataManager.createSampleMaintenanceRequests();
+    // Reapply formatting so dropdowns and other validations are added
+    SheetManager.applySheetSpecificFormatting(SpreadsheetApp.getActiveSpreadsheet());
     
     ui.alert(
       'System Initialized Successfully!',
