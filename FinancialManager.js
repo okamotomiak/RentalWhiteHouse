@@ -963,6 +963,268 @@ const FinancialManager = {
     
     return '<ul><li>' + insights.join('</li><li>') + '</li></ul>';
   },
+
+  /**
+   * Gather all dashboard data at once for performance
+   */
+  gatherDashboardData: function() {
+    const now = new Date();
+    const data = SheetManager.getAllData(CONFIG.SHEETS.BUDGET);
+
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+    const quarterStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+    const yearStart = new Date(now.getFullYear(), 0, 1);
+
+    const tenantData = SheetManager.getAllData(CONFIG.SHEETS.TENANTS);
+    const guestRoomData = SheetManager.getAllData(CONFIG.SHEETS.GUEST_ROOMS);
+    const guestBookingData = SheetManager.getAllData(CONFIG.SHEETS.GUEST_BOOKINGS);
+
+    return {
+      monthYear: Utils.formatDate(now, 'MMMM yyyy'),
+      monthAnalysis: this.analyzeFinancialData(data, monthStart, now),
+      previousMonth: this.analyzeFinancialData(data, prevMonthStart, prevMonthEnd),
+      ytdAnalysis: this.analyzeFinancialData(data, yearStart, now),
+      quarterAnalysis: this.analyzeFinancialData(data, quarterStart, now),
+      occupancyStats: this.calculateOccupancyStats(tenantData, guestRoomData, guestBookingData),
+      monthlyProfit: this.calculateProfitabilityMetrics(data, monthStart, now),
+      quarterlyProfit: this.calculateProfitabilityMetrics(data, quarterStart, now),
+      yearlyProfit: this.calculateProfitabilityMetrics(data, yearStart, now)
+    };
+  },
+
+  /**
+   * Build monthly report section HTML
+   */
+  buildMonthlySection: function(d) {
+    const r = d.monthAnalysis;
+    return `
+      <h3>💰 Monthly Financial Report - ${d.monthYear}</h3>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+        <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; text-align: center;">
+          <h4 style="margin: 0; color: #2e7d32;">Total Income</h4>
+          <p style="font-size: 24px; margin: 5px 0; font-weight: bold;">${Utils.formatCurrency(r.totalIncome)}</p>
+          <small>${r.incomeTransactions} transactions</small>
+        </div>
+        <div style="background: #ffebee; padding: 15px; border-radius: 8px; text-align: center;">
+          <h4 style="margin: 0; color: #c62828;">Total Expenses</h4>
+          <p style="font-size: 24px; margin: 5px 0; font-weight: bold;">${Utils.formatCurrency(r.totalExpenses)}</p>
+          <small>${r.expenseTransactions} transactions</small>
+        </div>
+        <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; text-align: center;">
+          <h4 style="margin: 0; color: #1565c0;">Net Profit</h4>
+          <p style="font-size: 24px; margin: 5px 0; font-weight: bold; color: ${r.netProfit >= 0 ? '#2e7d32' : '#c62828'};">${Utils.formatCurrency(r.netProfit)}</p>
+          <small>Profit Margin: ${r.profitMargin}%</small>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+        <div>
+          <h4>📈 Income Breakdown</h4>
+          <div style="background: #f5f5f5; padding: 15px; border-radius: 8px;">
+            ${Object.entries(r.incomeByCategory).map(([c,a]) => `<div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span><strong>${c}:</strong></span><span>${Utils.formatCurrency(a)}</span></div>`).join('')}
+          </div>
+        </div>
+        <div>
+          <h4>📉 Expense Breakdown</h4>
+          <div style="background: #f5f5f5; padding: 15px; border-radius: 8px;">
+            ${Object.entries(r.expensesByCategory).map(([c,a]) => `<div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span><strong>${c}:</strong></span><span>${Utils.formatCurrency(a)}</span></div>`).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  /**
+   * Build revenue analysis section HTML
+   */
+  buildRevenueSection: function(d) {
+    const c = d.monthAnalysis;
+    const p = d.previousMonth;
+    const y = d.ytdAnalysis;
+    const incomeChange = p.totalIncome > 0 ? ((c.totalIncome - p.totalIncome) / p.totalIncome * 100) : 0;
+    return `
+      <h3>📈 Revenue Analysis</h3>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+        <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; text-align: center;">
+          <h4 style="margin:0;color:#2e7d32;">Current Month</h4>
+          <p style="font-size:20px;margin:5px 0;font-weight:bold;">${Utils.formatCurrency(c.totalIncome)}</p>
+          <small style="color:${incomeChange >= 0 ? '#2e7d32' : '#c62828'};">${incomeChange >= 0 ? '↗' : '↘'} ${Math.abs(incomeChange).toFixed(1)}% vs last month</small>
+        </div>
+        <div style="background: #fff3e0; padding: 15px; border-radius: 8px; text-align: center;">
+          <h4 style="margin:0;color:#ef6c00;">Previous Month</h4>
+          <p style="font-size:20px;margin:5px 0;font-weight:bold;">${Utils.formatCurrency(p.totalIncome)}</p>
+          <small>Net: ${Utils.formatCurrency(p.netProfit)}</small>
+        </div>
+        <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; text-align: center;">
+          <h4 style="margin:0;color:#1565c0;">Year to Date</h4>
+          <p style="font-size:20px;margin:5px 0;font-weight:bold;">${Utils.formatCurrency(y.totalIncome)}</p>
+          <small>Avg Monthly: ${Utils.formatCurrency(y.totalIncome / (new Date().getMonth() + 1))}</small>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+        <div>
+          <h4>📊 Revenue Streams (YTD)</h4>
+          <div style="background:#f5f5f5;padding:15px;border-radius:8px;">
+            ${Object.entries(y.incomeByCategory).sort(([,a],[,b])=>b-a).map(([cat,amt]) => {
+              const pct = (amt / y.totalIncome * 100).toFixed(1);
+              return `<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;margin-bottom:2px;"><span><strong>${cat}</strong></span><span>${Utils.formatCurrency(amt)} (${pct}%)</span></div><div style="background:#ddd;height:8px;border-radius:4px;"><div style="background:#4caf50;height:100%;width:${pct}%;border-radius:4px;"></div></div></div>`;
+            }).join('')}
+          </div>
+        </div>
+        <div>
+          <h4>💸 Expense Categories (YTD)</h4>
+          <div style="background:#f5f5f5;padding:15px;border-radius:8px;">
+            ${Object.entries(y.expensesByCategory).sort(([,a],[,b])=>b-a).map(([cat,amt]) => {
+              const pct = (amt / y.totalExpenses * 100).toFixed(1);
+              return `<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;margin-bottom:2px;"><span><strong>${cat}</strong></span><span>${Utils.formatCurrency(amt)} (${pct}%)</span></div><div style="background:#ddd;height:8px;border-radius:4px;"><div style="background:#f44336;height:100%;width:${pct}%;border-radius:4px;"></div></div></div>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  /**
+   * Build occupancy metrics section HTML
+   */
+  buildOccupancySection: function(d) {
+    const o = d.occupancyStats;
+    return `
+      <h3>🏠 Occupancy Analytics</h3>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+        <div style="background:#e8f5e8;padding:15px;border-radius:8px;text-align:center;">
+          <h4 style="margin:0;color:#2e7d32;">Overall Occupancy</h4>
+          <p style="font-size:24px;margin:5px 0;font-weight:bold;">${o.overallOccupancy}%</p>
+          <small>${o.totalOccupied}/${o.totalRooms} rooms</small>
+        </div>
+        <div style="background:#e3f2fd;padding:15px;border-radius:8px;text-align:center;">
+          <h4 style="margin:0;color:#1565c0;">Long-term Rentals</h4>
+          <p style="font-size:24px;margin:5px 0;font-weight:bold;">${o.tenantOccupancy}%</p>
+          <small>${o.tenantsOccupied}/${o.totalTenantRooms} rooms</small>
+        </div>
+        <div style="background:#fff3e0;padding:15px;border-radius:8px;text-align:center;">
+          <h4 style="margin:0;color:#ef6c00;">Guest Rooms</h4>
+          <p style="font-size:24px;margin:5px 0;font-weight:bold;">${o.guestOccupancy}%</p>
+          <small>${o.guestsOccupied}/${o.totalGuestRooms} rooms</small>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+        <div>
+          <h4>📊 Revenue Efficiency</h4>
+          <div style="background:#f5f5f5;padding:15px;border-radius:8px;">
+            <p><strong>Revenue per Available Room (RevPAR):</strong></p>
+            <ul>
+              <li>Long-term: ${Utils.formatCurrency(o.tenantRevPAR)}/month</li>
+              <li>Guest rooms: ${Utils.formatCurrency(o.guestRevPAR)}/night</li>
+            </ul>
+            <p><strong>Average Daily Rate (ADR):</strong></p>
+            <ul>
+              <li>Long-term equivalent: ${Utils.formatCurrency(o.tenantADR)}/night</li>
+              <li>Guest rooms: ${Utils.formatCurrency(o.guestADR)}/night</li>
+            </ul>
+          </div>
+        </div>
+        <div>
+          <h4>🎯 Performance Targets</h4>
+          <div style="background:#f5f5f5;padding:15px;border-radius:8px;">
+            <div style="margin-bottom:15px;">
+              <p><strong>Target Overall Occupancy: 85%</strong></p>
+              <div style="background:#ddd;height:10px;border-radius:5px;">
+                <div style="background:${o.overallOccupancy >= 85 ? '#4caf50' : '#ff9800'};height:100%;width:${Math.min(o.overallOccupancy,100)}%;border-radius:5px;"></div>
+              </div>
+              <small>${o.overallOccupancy >= 85 ? '✅ Target Met' : `📈 ${(85 - o.overallOccupancy).toFixed(1)}% to target`}</small>
+            </div>
+            <div style="margin-bottom:15px;">
+              <p><strong>Target Guest Room Occupancy: 70%</strong></p>
+              <div style="background:#ddd;height:10px;border-radius:5px;">
+                <div style="background:${o.guestOccupancy >= 70 ? '#4caf50' : '#ff9800'};height:100%;width:${Math.min(o.guestOccupancy,100)}%;border-radius:5px;"></div>
+              </div>
+              <small>${o.guestOccupancy >= 70 ? '✅ Target Met' : `📈 ${(70 - o.guestOccupancy).toFixed(1)}% to target`}</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h4>📈 Optimization Opportunities</h4>
+      <div style="background:#e3f2fd;padding:15px;border-radius:8px;">
+        ${this.generateOccupancyInsights(o)}
+      </div>
+    `;
+  },
+
+  /**
+   * Build profitability section HTML
+   */
+  buildProfitSection: function(d) {
+    const m = d.monthlyProfit;
+    const q = d.quarterlyProfit;
+    const y = d.yearlyProfit;
+    return `
+      <h3>💡 Profitability Dashboard</h3>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+        <div style="background:#e8f5e8;padding:15px;border-radius:8px;text-align:center;">
+          <h4 style="margin:0;color:#2e7d32;">This Month</h4>
+          <p style="font-size:20px;margin:5px 0;font-weight:bold;">${Utils.formatCurrency(m.netProfit)}</p>
+          <small>Margin: ${m.profitMargin}%</small>
+        </div>
+        <div style="background:#fff3e0;padding:15px;border-radius:8px;text-align:center;">
+          <h4 style="margin:0;color:#ef6c00;">This Quarter</h4>
+          <p style="font-size:20px;margin:5px 0;font-weight:bold;">${Utils.formatCurrency(q.netProfit)}</p>
+          <small>Margin: ${q.profitMargin}%</small>
+        </div>
+        <div style="background:#e3f2fd;padding:15px;border-radius:8px;text-align:center;">
+          <h4 style="margin:0;color:#1565c0;">This Year</h4>
+          <p style="font-size:20px;margin:5px 0;font-weight:bold;">${Utils.formatCurrency(y.netProfit)}</p>
+          <small>Margin: ${y.profitMargin}%</small>
+        </div>
+      </div>
+
+      <div style="background:#f5f5f5;padding:15px;border-radius:8px;margin-bottom:20px;">
+        <h4>📊 Key Performance Metrics (YTD)</h4>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr style="border-bottom:1px solid #ddd;">
+            <th style="text-align:left;padding:8px;">Metric</th>
+            <th style="text-align:right;padding:8px;">Value</th>
+            <th style="text-align:center;padding:8px;">Status</th>
+          </tr>
+          <tr>
+            <td style="padding:8px;">Gross Revenue</td>
+            <td style="text-align:right;padding:8px;">${Utils.formatCurrency(y.totalRevenue)}</td>
+            <td style="text-align:center;padding:8px;">📈</td>
+          </tr>
+          <tr>
+            <td style="padding:8px;">Operating Expenses</td>
+            <td style="text-align:right;padding:8px;">${Utils.formatCurrency(y.totalExpenses)}</td>
+            <td style="text-align:center;padding:8px;">💸</td>
+          </tr>
+          <tr style="border-top:2px solid #ddd;font-weight:bold;">
+            <td style="padding:8px;">Net Operating Income</td>
+            <td style="text-align:right;padding:8px;color:${y.netProfit >= 0 ? '#2e7d32' : '#c62828'};">${Utils.formatCurrency(y.netProfit)}</td>
+            <td style="text-align:center;padding:8px;">${y.netProfit >= 0 ? '✅' : '⚠️'}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px;">Profit Margin</td>
+            <td style="text-align:right;padding:8px;color:${y.profitMargin >= 20 ? '#2e7d32' : y.profitMargin >= 10 ? '#ef6c00' : '#c62828'};">${y.profitMargin}%</td>
+            <td style="text-align:center;padding:8px;">${y.profitMargin >= 20 ? '🌟' : y.profitMargin >= 10 ? '👍' : '⚠️'}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px;">Cash Flow Ratio</td>
+            <td style="text-align:right;padding:8px;">${y.cashFlowRatio.toFixed(2)}x</td>
+            <td style="text-align:center;padding:8px;">${y.cashFlowRatio >= 1.2 ? '💪' : y.cashFlowRatio >= 1.0 ? '👌' : '🚨'}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="background:#e3f2fd;padding:15px;border-radius:8px;margin-bottom:20px;">
+        <h4>💡 Profitability Insights</h4>
+        ${this.generateProfitabilityInsights(m, q, y)}
+      </div>
+    `;
+  },
   
   /**
    * Export financial data for external analysis
@@ -1090,6 +1352,123 @@ const FinancialManager = {
       
     } catch (error) {
       handleSystemError(error, 'exportTaxData');
+    }
+  },
+
+  /**
+   * Show consolidated financial dashboard
+   */
+  showFinancialDashboard: function() {
+    try {
+      const dash = this.gatherDashboardData();
+
+      const html = HtmlService.createHtmlOutput(`
+        <style>
+          .fd-tab{display:none;}
+          .fd-tab.active{display:block;}
+          .fd-tabs button{margin-right:5px;}
+        </style>
+        <div style="font-family: Arial, sans-serif; padding:20px; line-height:1.6;">
+          <h2>📊 Financial Dashboard</h2>
+          <div class="fd-tabs" style="margin-bottom:15px;">
+            <button onclick="fdShow('monthly')">Monthly Report</button>
+            <button onclick="fdShow('revenue')">Revenue Analysis</button>
+            <button onclick="fdShow('occupancy')">Occupancy Metrics</button>
+            <button onclick="fdShow('profit')">Profitability</button>
+          </div>
+
+          <div id="monthly" class="fd-tab active">
+            ${this.buildMonthlySection(dash)}
+          </div>
+
+          <div id="revenue" class="fd-tab">
+            ${this.buildRevenueSection(dash)}
+          </div>
+
+          <div id="occupancy" class="fd-tab">
+            ${this.buildOccupancySection(dash)}
+          </div>
+
+          <div id="profit" class="fd-tab">
+            ${this.buildProfitSection(dash)}
+          </div>
+
+          <div style="text-align:center; margin-top:20px;">
+            <button onclick="google.script.run.showExportOptions()" style="padding:8px 20px;">Export / Download</button>
+          </div>
+        </div>
+        <script>
+          function fdShow(id){
+            document.querySelectorAll('.fd-tab').forEach(t=>t.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+          }
+        </script>
+      `).setWidth(1000).setHeight(800);
+
+      SpreadsheetApp.getUi().showModalDialog(html, 'Financial Dashboard');
+    } catch (error) {
+      handleSystemError(error, 'showFinancialDashboard');
+    }
+  },
+
+  /**
+   * Show unified export options
+   */
+  showExportOptions: function() {
+    const html = HtmlService.createHtmlOutput(`
+      <div style="font-family: Arial, sans-serif; padding:20px;">
+        <h3>Export Financial Data</h3>
+        <p>
+          <button onclick="google.script.run.exportFinancialData()">Full CSV</button>
+          <button onclick="google.script.run.exportTaxData()">Current Tax Year</button>
+        </p>
+        <p>Custom Range:</p>
+        <p>
+          <input type="date" id="start"> to
+          <input type="date" id="end">
+          <button onclick="exportRange()">Export</button>
+        </p>
+        <script>
+          function exportRange(){
+            const s=document.getElementById('start').value;
+            const e=document.getElementById('end').value;
+            google.script.run.exportFinancialDataRange(s,e);
+          }
+        </script>
+      </div>
+    `).setWidth(400).setHeight(220);
+    SpreadsheetApp.getUi().showModalDialog(html, 'Export Options');
+  },
+
+  /**
+   * Export financial data within a custom range
+   */
+  exportFinancialDataRange: function(start, end) {
+    try {
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+
+      const data = SheetManager.getAllData(CONFIG.SHEETS.BUDGET, true);
+      const filtered = [data[0]];
+      for (let i=1; i<data.length; i++) {
+        const row = data[i];
+        const d = new Date(row[this.COL.DATE - 1]);
+        if (d >= startDate && d <= endDate) filtered.push(row);
+      }
+
+      const csvContent = filtered.map(row => row.map(cell => {
+        if (cell instanceof Date) return Utils.formatDate(cell, 'yyyy-MM-dd');
+        if (typeof cell === 'string' && cell.includes(',')) return `"${cell}"`;
+        return cell;
+      }).join(',')).join('\n');
+
+      const fileName = `FinancialData_${Utils.formatDate(startDate,'yyyyMMdd')}_${Utils.formatDate(endDate,'yyyyMMdd')}.csv`;
+      const blob = Utilities.newBlob(csvContent, 'text/csv', fileName);
+      DriveApp.createFile(blob);
+
+      SpreadsheetApp.getUi().alert('Export complete: '+fileName);
+    } catch (error) {
+      handleSystemError(error, 'exportFinancialDataRange');
     }
   }
 };
