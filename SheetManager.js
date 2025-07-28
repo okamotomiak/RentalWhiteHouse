@@ -635,6 +635,18 @@ const SheetManager = {
     
     return sheet.getRange(startRow, 1, numRows, sheet.getLastColumn()).getValues();
   },
+
+  /**
+   * Remove asterisks from header row of a sheet
+   */
+  cleanHeaderAsterisks: function(sheet) {
+    const lastColumn = sheet.getLastColumn();
+    if (lastColumn === 0) return;
+    const range = sheet.getRange(1, 1, 1, lastColumn);
+    const headers = range.getValues()[0];
+    const cleaned = headers.map(h => (typeof h === 'string') ? h.replace(/\s*\*+$/, '').trim() : h);
+    range.setValues([cleaned]);
+  },
   
   /**
    * Clear sheet data (keep headers)
