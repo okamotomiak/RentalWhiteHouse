@@ -205,6 +205,8 @@ const SheetManager = {
     if (maintenanceSheet) {
       this.formatMaintenanceSheet(maintenanceSheet);
     }
+
+    SpreadsheetApp.flush();
   },
   
   /**
@@ -213,16 +215,13 @@ const SheetManager = {
   formatTenantsSheet: function(sheet) {
     if (sheet.getLastRow() < 2) return;
     
-    const dataRange = sheet.getRange(2, 1, sheet.getMaxRows() - 1, sheet.getLastColumn());
-    
-    // Alternate row colors
     const numRows = sheet.getMaxRows() - 1;
-    for (let i = 2; i <= numRows + 1; i++) {
-      const rowRange = sheet.getRange(i, 1, 1, sheet.getLastColumn());
-      if (i % 2 === 0) {
-        rowRange.setBackground('#f8f9fa');
-      }
-    }
+
+    // Alternate row colors using banding for efficiency
+    const existingBandings = sheet.getBandings();
+    existingBandings.forEach(b => b.remove());
+    sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getLastColumn())
+      .applyRowBanding(SpreadsheetApp.BandingTheme.LIGHT_GREY);
     
     // Conditional formatting for Room Status (column 9)
     const statusRange = sheet.getRange(2, 9, numRows, 1);
@@ -351,8 +350,36 @@ const SheetManager = {
       .setFontColor('#cc0000')
       .setRanges([amountRange])
       .build());
-    
+
     sheet.setConditionalFormatRules(rules);
+
+    // Data validation dropdowns based on existing values
+    const typeList = this.getUniqueValues(CONFIG.SHEETS.BUDGET, 2);
+    if (typeList.length > 0) {
+      const typeRule = SpreadsheetApp.newDataValidation()
+        .requireValueInList(typeList.sort(), true)
+        .setAllowInvalid(false)
+        .build();
+      sheet.getRange(2, 2, numRows, 1).setDataValidation(typeRule);
+    }
+
+    const categoryList = this.getUniqueValues(CONFIG.SHEETS.BUDGET, 5);
+    if (categoryList.length > 0) {
+      const catRule = SpreadsheetApp.newDataValidation()
+        .requireValueInList(categoryList.sort(), true)
+        .setAllowInvalid(false)
+        .build();
+      sheet.getRange(2, 5, numRows, 1).setDataValidation(catRule);
+    }
+
+    const methodList = this.getUniqueValues(CONFIG.SHEETS.BUDGET, 6);
+    if (methodList.length > 0) {
+      const methodRule = SpreadsheetApp.newDataValidation()
+        .requireValueInList(methodList.sort(), true)
+        .setAllowInvalid(false)
+        .build();
+      sheet.getRange(2, 6, numRows, 1).setDataValidation(methodRule);
+    }
   },
   
   /**
@@ -544,6 +571,34 @@ const SheetManager = {
       .build());
     
     sheet.setConditionalFormatRules([...priorityRules, ...statusRules]);
+
+    // Data validation dropdowns from existing values
+    const issueTypes = this.getUniqueValues(CONFIG.SHEETS.MAINTENANCE, 4);
+    if (issueTypes.length > 0) {
+      const issueRule = SpreadsheetApp.newDataValidation()
+        .requireValueInList(issueTypes.sort(), true)
+        .setAllowInvalid(false)
+        .build();
+      sheet.getRange(2, 4, numRows, 1).setDataValidation(issueRule);
+    }
+
+    const priorityList = this.getUniqueValues(CONFIG.SHEETS.MAINTENANCE, 5);
+    if (priorityList.length > 0) {
+      const priorityRule = SpreadsheetApp.newDataValidation()
+        .requireValueInList(priorityList.sort(), true)
+        .setAllowInvalid(false)
+        .build();
+      sheet.getRange(2, 5, numRows, 1).setDataValidation(priorityRule);
+    }
+
+    const statusList = this.getUniqueValues(CONFIG.SHEETS.MAINTENANCE, 10);
+    if (statusList.length > 0) {
+      const statusRule = SpreadsheetApp.newDataValidation()
+        .requireValueInList(statusList.sort(), true)
+        .setAllowInvalid(false)
+        .build();
+      sheet.getRange(2, 10, numRows, 1).setDataValidation(statusRule);
+    }
   },
   
   /**
@@ -634,6 +689,21 @@ const SheetManager = {
     }
     
     return sheet.getRange(startRow, 1, numRows, sheet.getLastColumn()).getValues();
+  },
+
+  /**
+   * Get unique non-empty values from a column in a sheet
+   */
+  getUniqueValues: function(sheetName, columnIndex) {
+    const data = this.getAllData(sheetName);
+    const values = new Set();
+    data.forEach(row => {
+      const val = row[columnIndex - 1];
+      if (val !== '' && val != null) {
+        values.add(val.toString());
+      }
+    });
+    return Array.from(values);
   },
 
   /**
