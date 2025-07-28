@@ -72,7 +72,7 @@ const SheetManager = {
    */
   initializeAllSheets: function() {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    
+
     try {
       // Create/setup each sheet
       Object.entries(CONFIG.SHEETS).forEach(([key, sheetName]) => {
@@ -86,6 +86,38 @@ const SheetManager = {
       
     } catch (error) {
       Logger.log(`Error initializing sheets: ${error.toString()}`);
+      throw error;
+    }
+  },
+
+  /**
+   * Initialize base sheets only (excluding form response sheets)
+   */
+  initializeCoreSheets: function() {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    const baseSheets = [
+      CONFIG.SHEETS.TENANTS,
+      CONFIG.SHEETS.BUDGET,
+      CONFIG.SHEETS.GUEST_ROOMS,
+      CONFIG.SHEETS.GUEST_BOOKINGS,
+      CONFIG.SHEETS.MAINTENANCE,
+      CONFIG.SHEETS.DOCUMENTS,
+      CONFIG.SHEETS.SETTINGS
+    ];
+
+    try {
+      baseSheets.forEach(name => {
+        const key = Object.keys(CONFIG.SHEETS).find(k => CONFIG.SHEETS[k] === name);
+        this.setupSheet(ss, name, this.HEADERS[key]);
+      });
+
+      this.applySheetSpecificFormatting(ss);
+
+      Logger.log('Core sheets initialized successfully');
+
+    } catch (error) {
+      Logger.log(`Error initializing core sheets: ${error.toString()}`);
       throw error;
     }
   },
@@ -259,6 +291,18 @@ const SheetManager = {
       .setAllowInvalid(false)
       .build();
     sheet.getRange(2, 9, numRows, 1).setDataValidation(roomStatusRule);
+
+    // Data validation for Payment Status dropdown
+    const paymentStatusRule = SpreadsheetApp.newDataValidation()
+      .requireValueInList([
+        CONFIG.STATUS.PAYMENT.PAID,
+        CONFIG.STATUS.PAYMENT.DUE,
+        CONFIG.STATUS.PAYMENT.OVERDUE,
+        CONFIG.STATUS.PAYMENT.PARTIAL
+      ], true)
+      .setAllowInvalid(false)
+      .build();
+    sheet.getRange(2, 11, numRows, 1).setDataValidation(paymentStatusRule);
 
     sheet.setConditionalFormatRules(rules);
     
