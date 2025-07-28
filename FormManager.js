@@ -74,12 +74,12 @@ Thank you for your interest in our community!
       .setHelpText('Please provide your basic contact information');
     
     form.addTextItem()
-      .setTitle('Full Name *')
+      .setTitle('Full Name')
       .setRequired(true)
       .setHelpText('First and Last Name');
     
     form.addTextItem()
-      .setTitle('Email Address *')
+      .setTitle('Email Address')
       .setRequired(true)
       .setValidation(FormApp.createTextValidation()
         .setHelpText('Please enter a valid email address')
@@ -87,7 +87,7 @@ Thank you for your interest in our community!
         .build());
     
     form.addTextItem()
-      .setTitle('Phone Number *')
+      .setTitle('Phone Number')
       .setRequired(true)
       .setHelpText('Primary contact number');
     
@@ -96,7 +96,7 @@ Thank you for your interest in our community!
       .setTitle('Current Housing Information');
     
     form.addParagraphTextItem()
-      .setTitle('Current Address *')
+      .setTitle('Current Address')
       .setRequired(true)
       .setHelpText('Include street address, city, state, and zip code');
     
@@ -105,13 +105,13 @@ Thank you for your interest in our community!
       .setTitle('Desired Housing');
     
     form.addDateItem()
-      .setTitle('Desired Move-in Date *')
+      .setTitle('Desired Move-in Date')
       .setRequired(true)
       .setHelpText('When would you like to move in?');
     
     const roomItem = form.addMultipleChoiceItem();
     roomItem
-      .setTitle('Preferred Room *')
+      .setTitle('Preferred Room')
       .setRequired(true)
       .setChoices([
         roomItem.createChoice('Any available room'),
@@ -132,7 +132,7 @@ Thank you for your interest in our community!
     
     const employmentItem = form.addMultipleChoiceItem();
     employmentItem
-      .setTitle('Employment Status *')
+      .setTitle('Employment Status')
       .setRequired(true)
       .setChoices([
         employmentItem.createChoice('Full-time employed'),
@@ -149,7 +149,7 @@ Thank you for your interest in our community!
       .setHelpText('Current employer or educational institution');
     
     form.addTextItem()
-      .setTitle('Monthly Income *')
+      .setTitle('Monthly Income')
       .setRequired(true)
       .setHelpText('Gross monthly income in dollars (numbers only)')
       .setValidation(FormApp.createTextValidation()
@@ -163,7 +163,7 @@ Thank you for your interest in our community!
       .setHelpText('Please provide at least one reference');
     
     form.addParagraphTextItem()
-      .setTitle('Reference 1 (Required) *')
+      .setTitle('Reference 1 (Required)')
       .setRequired(true)
       .setHelpText('Name, relationship, phone number, and email if available');
     
@@ -176,7 +176,7 @@ Thank you for your interest in our community!
       .setTitle('Emergency Contact');
     
     form.addParagraphTextItem()
-      .setTitle('Emergency Contact Information *')
+      .setTitle('Emergency Contact Information')
       .setRequired(true)
       .setHelpText('Name, relationship, and phone number');
     
@@ -196,14 +196,14 @@ Thank you for your interest in our community!
     if (typeof form.addFileUploadItem === 'function') {
       // Workspace domains support file upload items
       form.addFileUploadItem()
-        .setTitle('Proof of Income *')
+        .setTitle('Proof of Income')
         .setRequired(true)
         .setHelpText('Upload recent pay stub, bank statement, or employment letter (PDF, JPG, PNG)')
         .setFolderName('Belvedere White House Rental - Applications');
     } else {
       // Fallback when file uploads are unavailable
       form.addParagraphTextItem()
-        .setTitle('Proof of Income *')
+        .setTitle('Proof of Income')
         .setRequired(true)
         .setHelpText('Describe or link your proof of income document');
     }
@@ -211,24 +211,14 @@ Thank you for your interest in our community!
     // Agreement
     const agreementItem = form.addCheckboxItem();
     agreementItem
-      .setTitle('Application Agreement *')
+      .setTitle('Application Agreement')
       .setRequired(true)
       .setChoices([
         agreementItem.createChoice('I certify that all information provided is true and complete. I understand that false information may result in denial of my application.')
       ]);
     
-    // Connect form to spreadsheet and rename response sheet
-    form.setDestination(FormApp.DestinationType.SPREADSHEET, SpreadsheetApp.getActiveSpreadsheet().getId());
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const respSheetName = form.getTitle() + ' (Responses)';
-    let respSheet = ss.getSheetByName(respSheetName);
-    if (!respSheet) {
-      respSheet = ss.getSheets().find(s => /^Form Responses/.test(s.getName()));
-    }
-    if (respSheet) {
-      respSheet.setName(CONFIG.SHEETS.APPLICATIONS);
-      SheetManager.cleanHeaderAsterisks(respSheet);
-    }
+    // Link form responses to spreadsheet and rename sheet
+    this.linkFormToSheet(form, CONFIG.SHEETS.APPLICATIONS);
 
     return form;
   },
@@ -254,24 +244,24 @@ Thank you for being a valued resident!
       .setTitle('Tenant Information');
     
     form.addTextItem()
-      .setTitle('Tenant Name *')
+      .setTitle('Tenant Name')
       .setRequired(true)
       .setHelpText('Your full name as it appears on the lease');
     
     form.addTextItem()
-      .setTitle('Email Address *')
+      .setTitle('Email Address')
       .setRequired(true)
       .setValidation(FormApp.createTextValidation()
         .requireTextIsEmail()
         .build());
     
     form.addTextItem()
-      .setTitle('Phone Number *')
+      .setTitle('Phone Number')
       .setRequired(true);
     
     const roomNumberItem = form.addMultipleChoiceItem();
     roomNumberItem
-      .setTitle('Room Number *')
+      .setTitle('Room Number')
       .setRequired(true)
       .setChoices([
         roomNumberItem.createChoice('Room 101'),
@@ -289,18 +279,18 @@ Thank you for being a valued resident!
       .setTitle('Move-Out Details');
     
     form.addDateItem()
-      .setTitle('Planned Move-Out Date *')
+      .setTitle('Planned Move-Out Date')
       .setRequired(true)
       .setHelpText('Must be at least 30 days from today');
     
     form.addParagraphTextItem()
-      .setTitle('Forwarding Address *')
+      .setTitle('Forwarding Address')
       .setRequired(true)
       .setHelpText('Complete address where security deposit refund should be mailed');
     
     const reasonItem = form.addMultipleChoiceItem();
     reasonItem
-      .setTitle('Primary Reason for Moving *')
+      .setTitle('Primary Reason for Moving')
       .setRequired(true)
       .setChoices([
         reasonItem.createChoice('Job relocation'),
@@ -342,18 +332,8 @@ Thank you for being a valued resident!
         recommendItem.createChoice('Definitely not')
       ]);
     
-    // Connect form to spreadsheet and rename response sheet
-    form.setDestination(FormApp.DestinationType.SPREADSHEET, SpreadsheetApp.getActiveSpreadsheet().getId());
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const respName = form.getTitle() + ' (Responses)';
-    let responseSheet = ss.getSheetByName(respName);
-    if (!responseSheet) {
-      responseSheet = ss.getSheets().find(s => /^Form Responses/.test(s.getName()));
-    }
-    if (responseSheet) {
-      responseSheet.setName(CONFIG.SHEETS.MOVEOUTS);
-      SheetManager.cleanHeaderAsterisks(responseSheet);
-    }
+    // Link form responses to spreadsheet and rename sheet
+    this.linkFormToSheet(form, CONFIG.SHEETS.MOVEOUTS);
 
     return form;
   },
@@ -408,9 +388,30 @@ Thank you for being a valued resident!
       });
       
       Logger.log('Form information stored successfully');
-      
+
     } catch (error) {
       Logger.log(`Error storing form information: ${error.toString()}`);
+    }
+  },
+
+  /**
+   * Link a form to the active spreadsheet and rename the response sheet
+   */
+  linkFormToSheet: function(form, sheetName) {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const existingIds = ss.getSheets().map(s => s.getSheetId());
+
+    // Create response sheet
+    form.setDestination(FormApp.DestinationType.SPREADSHEET, ss.getId());
+
+    // Find newly created "Form Responses" sheet
+    const newSheet = ss.getSheets().find(s =>
+      /^Form Responses/.test(s.getName()) && existingIds.indexOf(s.getSheetId()) === -1
+    ) || ss.getSheets().find(s => /^Form Responses/.test(s.getName()));
+
+    if (newSheet) {
+      newSheet.setName(sheetName);
+      SheetManager.cleanHeaderAsterisks(newSheet);
     }
   },
   
