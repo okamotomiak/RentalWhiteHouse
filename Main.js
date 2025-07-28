@@ -717,6 +717,7 @@ function initializeCompleteSystem() {
     DataManager.createSampleMaintenanceRequests();
     // Reapply formatting so dropdowns and other validations are added
     SheetManager.applySheetSpecificFormatting(SpreadsheetApp.getActiveSpreadsheet());
+    SpreadsheetApp.flush();
     
     ui.alert(
       'System Initialized Successfully!',
