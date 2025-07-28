@@ -661,8 +661,11 @@ function onOpen() {
       .addItem('💰 Maintenance Cost Report', 'generateMaintenanceCostReport'))
     
     .addSubMenu(ui.createMenu('📊 Financial Reports')
-      .addItem('📊 Financial Dashboard', 'showFinancialDashboard')
-      .addItem('📥 Export Data', 'showExportOptions'))
+      .addItem('💰 Monthly Financial Report', 'generateMonthlyFinancialReport')
+      .addItem('📈 Revenue Analysis', 'showRevenueAnalysis')
+      .addItem('🏠 Occupancy Analytics', 'showOccupancyAnalytics')
+      .addItem('💡 Profitability Dashboard', 'showProfitabilityDashboard')
+      .addItem('📋 Tax Report', 'generateTaxReport'))
     
     .addSubMenu(ui.createMenu('📋 Forms & Documents')
       .addItem('🏗️ Create All Forms', 'createAllSystemForms')
@@ -1073,8 +1076,6 @@ function showOccupancyAnalytics() { FinancialManager.showOccupancyAnalytics(); }
 function showProfitabilityDashboard() { FinancialManager.showProfitabilityDashboard(); }
 function generateTaxReport() { FinancialManager.generateTaxReport(); }
 function exportFinancialData() { FinancialManager.exportFinancialData(); }
-function showFinancialDashboard() { FinancialManager.showFinancialDashboard(); }
-function showExportOptions() { FinancialManager.showExportOptions(); }
 
 // Initialize system when script loads
 Logger.log('Parsonage Management System v2.0 loaded successfully');
