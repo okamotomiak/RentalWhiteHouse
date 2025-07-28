@@ -82,10 +82,17 @@ const TriggerManager = {
         .onMonthDay(1)
         .atHour(9)
         .create();
+
+      // Weekly late payment alerts (Monday 9 AM)
+      ScriptApp.newTrigger('weeklyLatePaymentAlerts')
+        .timeBased()
+        .onWeekDay(ScriptApp.WeekDay.MONDAY)
+        .atHour(9)
+        .create();
       
       SpreadsheetApp.getUi().alert(
         'Triggers Setup Complete',
-        'Automated triggers configured:\n• Daily payment checks\n• Monthly rent reminders',
+        'Automated triggers configured:\n• Daily payment checks\n• Monthly rent reminders\n• Weekly late payment alerts',
         SpreadsheetApp.getUi().ButtonSet.OK
       );
       
@@ -201,116 +208,55 @@ const DocumentManager = {
       'Lease agreement generation feature is in development.\n\nThis will create customized lease agreements based on tenant information.',
       SpreadsheetApp.getUi().ButtonSet.OK
     );
-  }
-};
-
-/**
- * FormManager - Form management system
- */
-const FormManager = {
-  createAllSystemForms: function() {
-    const ui = SpreadsheetApp.getUi();
-    
-    try {
-      const forms = [];
-      
-      // Create Tenant Application Form
-      const tenantForm = FormApp.create('Tenant Application - ' + CONFIG.SYSTEM.PROPERTY_NAME);
-      tenantForm.setDescription('Please complete this application to be considered for tenancy.');
-      
-      tenantForm.addTextItem().setTitle('Full Name').setRequired(true);
-      tenantForm.addTextItem().setTitle('Email Address').setRequired(true);
-      tenantForm.addTextItem().setTitle('Phone Number').setRequired(true);
-      tenantForm.addParagraphTextItem().setTitle('Current Address').setRequired(true);
-      tenantForm.addDateItem().setTitle('Desired Move-in Date').setRequired(true);
-      tenantForm.addTextItem().setTitle('Monthly Income').setRequired(true);
-      tenantForm.addTextItem().setTitle('Employment Status').setRequired(true);
-      tenantForm.addParagraphTextItem().setTitle('Emergency Contact Information');
-      tenantForm.addParagraphTextItem().setTitle('Tell us about yourself');
-      
-      forms.push({
-        name: 'Tenant Application',
-        url: tenantForm.getEditUrl(),
-        published: tenantForm.getPublishedUrl()
-      });
-      
-      // Create Move-Out Request Form
-      const moveOutForm = FormApp.create('Move-Out Request - ' + CONFIG.SYSTEM.PROPERTY_NAME);
-      moveOutForm.setDescription('Submit your 30-day move-out notice.');
-      
-      moveOutForm.addTextItem().setTitle('Tenant Name').setRequired(true);
-      moveOutForm.addTextItem().setTitle('Room Number').setRequired(true);
-      moveOutForm.addTextItem().setTitle('Email Address').setRequired(true);
-      moveOutForm.addDateItem().setTitle('Intended Move-Out Date').setRequired(true);
-      moveOutForm.addParagraphTextItem().setTitle('Forwarding Address').setRequired(true);
-      moveOutForm.addParagraphTextItem().setTitle('Reason for Moving');
-      moveOutForm.addScaleItem().setTitle('Overall Satisfaction (1-5)').setBounds(1, 5);
-      
-      forms.push({
-        name: 'Move-Out Request',
-        url: moveOutForm.getEditUrl(),
-        published: moveOutForm.getPublishedUrl()
-      });
-      
-      // Create Guest Booking Form
-      const guestForm = FormApp.create('Guest Room Booking - ' + CONFIG.SYSTEM.PROPERTY_NAME);
-      guestForm.setDescription('Book your stay with us.');
-      
-      guestForm.addTextItem().setTitle('Guest Name').setRequired(true);
-      guestForm.addTextItem().setTitle('Email Address').setRequired(true);
-      guestForm.addTextItem().setTitle('Phone Number').setRequired(true);
-      guestForm.addDateItem().setTitle('Check-in Date').setRequired(true);
-      guestForm.addDateItem().setTitle('Check-out Date').setRequired(true);
-      guestForm.addTextItem().setTitle('Number of Guests').setRequired(true);
-      guestForm.addTextItem().setTitle('Purpose of Visit');
-      guestForm.addParagraphTextItem().setTitle('Special Requests or Notes');
-      
-      forms.push({
-        name: 'Guest Room Booking',
-        url: guestForm.getEditUrl(),
-        published: guestForm.getPublishedUrl()
-      });
-      
-      // Store form URLs in a simple format for reference
-      this.formUrls = forms;
-      
-      ui.alert(
-        'Forms Created Successfully!',
-        `Created ${forms.length} forms:\n\n` +
-        forms.map(form => `• ${form.name}`).join('\n') +
-        '\n\nUse "View Form Links" to see URLs.',
-        ui.ButtonSet.OK
-      );
-      
-    } catch (error) {
-      ui.alert('Error', `Failed to create forms: ${error.message}`, ui.ButtonSet.OK);
-    }
   },
-  
-  showAllFormLinks: function() {
-    const html = HtmlService.createHtmlOutput(`
-      <div style="font-family: Arial, sans-serif; padding: 20px;">
-        <h2>🔗 Form Links</h2>
-        <p>Share these links with tenants and guests:</p>
-        
-        <h3>📝 Tenant Application</h3>
-        <p><strong>Form URL:</strong> Create forms first using "Create All Forms"</p>
-        
-        <h3>📤 Move-Out Request</h3>
-        <p><strong>Form URL:</strong> Create forms first using "Create All Forms"</p>
-        
-        <h3>🛏️ Guest Room Booking</h3>
-        <p><strong>Form URL:</strong> Create forms first using "Create All Forms"</p>
-        
-        <p style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-top: 20px;">
-          <strong>Note:</strong> After creating forms, you can find the URLs in Google Forms and share them with your tenants and guests.
-        </p>
-      </div>
-    `)
-      .setWidth(600)
-      .setHeight(400);
-    
-    SpreadsheetApp.getUi().showModalDialog(html, 'Form Links');
+
+  /**
+   * Create PDF rent invoice
+   */
+  createRentInvoice: function(data) {
+    const doc = DocumentApp.create(`Invoice - ${data.tenantName} - ${data.monthYear}`);
+    const body = doc.getBody();
+
+    body.appendParagraph('Belvedere White House Rental').setHeading(DocumentApp.ParagraphHeading.HEADING1);
+    body.appendParagraph(`Invoice for ${data.tenantName}`).setHeading(DocumentApp.ParagraphHeading.HEADING2);
+    body.appendParagraph(`Room: ${data.roomNumber}`);
+    if (data.email) body.appendParagraph(`Email: ${data.email}`);
+    if (data.phone) body.appendParagraph(`Phone: ${data.phone}`);
+    body.appendParagraph(`Period: ${data.monthYear}`);
+    body.appendParagraph(`Rent Due: ${Utils.formatCurrency(data.rent)}`);
+    body.appendParagraph(`Due Date: ${data.dueDate}`);
+    body.appendParagraph('Thank you for your prompt payment.');
+
+    doc.saveAndClose();
+    const pdf = doc.getAs(MimeType.PDF);
+    DriveApp.getFileById(doc.getId()).setTrashed(true);
+    return pdf;
+  },
+
+  /**
+   * Create PDF move-out report
+   */
+  createMoveOutReport: function(data) {
+    const doc = DocumentApp.create(`Move-Out Report - ${data.tenantName}`);
+    const body = doc.getBody();
+
+    body.appendParagraph('Belvedere White House Rental').setHeading(DocumentApp.ParagraphHeading.HEADING1);
+    body.appendParagraph('Move-Out Report').setHeading(DocumentApp.ParagraphHeading.HEADING2);
+    body.appendParagraph(`Tenant: ${data.tenantName}`);
+    body.appendParagraph(`Room: ${data.roomNumber}`);
+    body.appendParagraph(`Move-Out Date: ${Utils.formatDate(data.moveOutDate)}`);
+    body.appendParagraph(`Condition: ${data.roomCondition}`);
+    body.appendParagraph(`Deposit Refund: ${Utils.formatCurrency(data.depositRefund)}`);
+    if (data.deductions > 0) {
+      body.appendParagraph(`Deductions: ${Utils.formatCurrency(data.deductions)}`);
+      if (data.deductionReason) body.appendParagraph(`Reason: ${data.deductionReason}`);
+    }
+    if (data.finalNotes) body.appendParagraph(data.finalNotes);
+
+    doc.saveAndClose();
+    const pdf = doc.getAs(MimeType.PDF);
+    DriveApp.getFileById(doc.getId()).setTrashed(true);
+    return pdf;
   }
 };
 
@@ -665,6 +611,15 @@ function monthlyRentReminders() {
     TenantManager.sendRentReminders();
   } catch (error) {
     Logger.log(`Error in monthly rent reminders: ${error.toString()}`);
+  }
+}
+
+function weeklyLatePaymentAlerts() {
+  try {
+    Logger.log('Running weekly late payment alerts...');
+    TenantManager.sendLatePaymentAlerts();
+  } catch (error) {
+    Logger.log(`Error in weekly late payment alerts: ${error.toString()}`);
   }
 }
 
@@ -1077,6 +1032,23 @@ function customizeSystemSettings() { SettingsManager.customizeSystemSettings(); 
 function exportSystemBackup() { DataManager.exportSystemData(); }
 function importSystemData() { DataManager.importSystemData(); }
 function configureEmailTemplates() { EmailManager.configureEmailTemplates(); }
+
+// Tenant management wrappers
+function showTenantDashboard() { TenantManager.showTenantDashboard(); }
+function checkAllPaymentStatus() { TenantManager.checkAllPaymentStatus(); }
+function sendRentReminders() { TenantManager.sendRentReminders(); }
+function sendLatePaymentAlerts() { TenantManager.sendLatePaymentAlerts(); }
+function sendMonthlyInvoices() { TenantManager.sendMonthlyInvoices(); }
+function markPaymentReceived() { TenantManager.markPaymentReceived(); }
+function processMoveIn() { TenantManager.processMoveIn(); }
+function processMoveOut() { TenantManager.processMoveOut(); }
+
+// Guest management wrappers
+function showTodayGuestActivity() { GuestManager.showTodayGuestActivity(); }
+function checkGuestRoomAvailability() { GuestManager.checkGuestRoomAvailability(); }
+function processGuestCheckIn() { GuestManager.processGuestCheckIn(); }
+function processGuestCheckOut() { GuestManager.processGuestCheckOut(); }
+function showGuestRoomAnalytics() { GuestManager.showGuestRoomAnalytics(); }
 
 // Forms & Documents functions
 function createAllSystemForms() { FormManager.createAllSystemForms(); }

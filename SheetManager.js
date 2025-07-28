@@ -194,7 +194,7 @@ const SheetManager = {
     
     // Conditional formatting for Room Status (column 9)
     const statusRange = sheet.getRange(2, 9, numRows, 1);
-    
+
     const rules = [];
     
     // Occupied - Green
@@ -247,7 +247,19 @@ const SheetManager = {
       .setFontColor('#cc0000')
       .setRanges([paymentStatusRange])
       .build());
-    
+
+    // Data validation for Room Status dropdown
+    const roomStatusRule = SpreadsheetApp.newDataValidation()
+      .requireValueInList([
+        CONFIG.STATUS.ROOM.OCCUPIED,
+        CONFIG.STATUS.ROOM.VACANT,
+        CONFIG.STATUS.ROOM.MAINTENANCE,
+        CONFIG.STATUS.ROOM.PENDING
+      ], true)
+      .setAllowInvalid(false)
+      .build();
+    sheet.getRange(2, 9, numRows, 1).setDataValidation(roomStatusRule);
+
     sheet.setConditionalFormatRules(rules);
     
     // Format specific columns

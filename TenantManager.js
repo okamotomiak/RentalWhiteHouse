@@ -219,9 +219,11 @@ const TenantManager = {
               rent: rent,
               monthYear: monthYear,
               dueDate: dueDate,
-              propertyName: CONFIG.SYSTEM.PROPERTY_NAME
+              propertyName: CONFIG.SYSTEM.PROPERTY_NAME,
+              email: row[this.COL.TENANT_EMAIL - 1],
+              phone: row[this.COL.TENANT_PHONE - 1]
             });
-            
+
             EmailManager.sendMonthlyInvoice(email, {
               tenantName: tenant,
               monthYear: monthYear
@@ -251,70 +253,71 @@ const TenantManager = {
   markPaymentReceived: function() {
     try {
       const ui = SpreadsheetApp.getUi();
-      const sheet = SpreadsheetApp.getActiveSheet();
-      
-      if (sheet.getName() !== CONFIG.SHEETS.TENANTS) {
-        ui.alert('Please select a row in the Tenants sheet.');
+      const tenants = SheetManager.getAllData(CONFIG.SHEETS.TENANTS);
+
+      const options = tenants.map((row, i) => {
+        if (row[this.COL.ROOM_STATUS - 1] === CONFIG.STATUS.ROOM.OCCUPIED && row[this.COL.TENANT_NAME - 1]) {
+          return `<option value="${i + 2}">${row[this.COL.TENANT_NAME - 1]} (Room ${row[this.COL.ROOM_NUMBER - 1]})</option>`;
+        }
+        return '';
+      }).join('');
+
+      if (!options) {
+        ui.alert('No occupied tenants found.');
         return;
       }
-      
-      const row = sheet.getActiveRange().getRow();
-      if (row <= 1) {
-        ui.alert('Please select a tenant row.');
-        return;
-      }
-      
-      const tenantName = sheet.getRange(row, this.COL.TENANT_NAME).getValue();
-      const roomNumber = sheet.getRange(row, this.COL.ROOM_NUMBER).getValue();
-      const rent = sheet.getRange(row, this.COL.NEGOTIATED_PRICE).getValue() || 
-                   sheet.getRange(row, this.COL.RENTAL_PRICE).getValue();
-      
-      if (!tenantName || !roomNumber) {
-        ui.alert('Invalid tenant row selected.');
-        return;
-      }
-      
-      // Get payment amount from user
-      const response = ui.prompt(
-        'Record Payment',
-        `Recording payment for ${tenantName} (Room ${roomNumber})\nEnter payment amount:`,
-        ui.ButtonSet.OK_CANCEL
-      );
-      
-      if (response.getSelectedButton() !== ui.Button.OK) {
-        return;
-      }
-      
-      const paymentAmount = parseFloat(response.getResponseText()) || rent;
-      
-      // Update tenant record
-      sheet.getRange(row, this.COL.LAST_PAYMENT).setValue(new Date());
-      
-      if (paymentAmount >= rent) {
-        sheet.getRange(row, this.COL.PAYMENT_STATUS).setValue(CONFIG.STATUS.PAYMENT.PAID);
-      } else {
-        sheet.getRange(row, this.COL.PAYMENT_STATUS).setValue(CONFIG.STATUS.PAYMENT.PARTIAL);
-      }
-      
-      // Log payment in budget
-      FinancialManager.logPayment({
-        date: new Date(),
-        type: 'Rent Income',
-        description: `Rent payment from ${tenantName} - Room ${roomNumber}`,
-        amount: paymentAmount,
-        category: 'Rent',
-        tenant: tenantName,
-        reference: `RENT-${roomNumber}-${Utils.formatDate(new Date(), 'yyyyMM')}`
-      });
-      
-      ui.alert(
-        'Payment Recorded',
-        `Payment of ${Utils.formatCurrency(paymentAmount)} from ${tenantName} has been recorded.`,
-        ui.ButtonSet.OK
-      );
-      
+
+      const html = HtmlService.createHtmlOutput(`
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h3>Record Rent Payment</h3>
+          <label>Tenant:</label>
+          <select id="row">${options}</select><br><br>
+          <label>Payment Date:</label>
+          <input type="date" id="date" value="${Utils.formatDate(new Date(), 'yyyy-MM-dd')}"><br><br>
+          <button onclick="submitForm()">Record</button>
+          <script>
+            function submitForm(){
+              google.script.run
+                .withSuccessHandler(function(){google.script.host.close();})
+                .withFailureHandler(function(e){alert(e.message);})
+                .recordTenantPayment(document.getElementById('row').value, document.getElementById('date').value);
+            }
+          </script>
+        </div>
+      `).setWidth(300).setHeight(230);
+
+      ui.showModalDialog(html, 'Record Payment');
+
     } catch (error) {
       handleSystemError(error, 'markPaymentReceived');
+    }
+  },
+
+  recordTenantPayment: function(rowNumber, dateStr) {
+    try {
+      const sheet = SheetManager.getSheet(CONFIG.SHEETS.TENANTS);
+      const row = parseInt(rowNumber);
+      const rent = sheet.getRange(row, this.COL.NEGOTIATED_PRICE).getValue() || sheet.getRange(row, this.COL.RENTAL_PRICE).getValue();
+
+      sheet.getRange(row, this.COL.LAST_PAYMENT).setValue(new Date(dateStr));
+      sheet.getRange(row, this.COL.PAYMENT_STATUS).setValue(CONFIG.STATUS.PAYMENT.PAID);
+
+      const tenantName = sheet.getRange(row, this.COL.TENANT_NAME).getValue();
+      const roomNumber = sheet.getRange(row, this.COL.ROOM_NUMBER).getValue();
+
+      FinancialManager.logPayment({
+        date: new Date(dateStr),
+        type: 'Rent Income',
+        description: `Rent payment from ${tenantName} - Room ${roomNumber}`,
+        amount: rent,
+        category: 'Rent',
+        tenant: tenantName,
+        reference: `RENT-${roomNumber}-${Utils.formatDate(new Date(dateStr), 'yyyyMM')}`
+      });
+
+    } catch (error) {
+      Logger.log(`Error recording payment: ${error.toString()}`);
+      throw error;
     }
   },
   
