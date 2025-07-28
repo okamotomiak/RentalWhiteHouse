@@ -82,10 +82,17 @@ const TriggerManager = {
         .onMonthDay(1)
         .atHour(9)
         .create();
+
+      // Weekly late payment alerts (Monday 9 AM)
+      ScriptApp.newTrigger('weeklyLatePaymentAlerts')
+        .timeBased()
+        .onWeekDay(ScriptApp.WeekDay.MONDAY)
+        .atHour(9)
+        .create();
       
       SpreadsheetApp.getUi().alert(
         'Triggers Setup Complete',
-        'Automated triggers configured:\n• Daily payment checks\n• Monthly rent reminders',
+        'Automated triggers configured:\n• Daily payment checks\n• Monthly rent reminders\n• Weekly late payment alerts',
         SpreadsheetApp.getUi().ButtonSet.OK
       );
       
@@ -201,6 +208,55 @@ const DocumentManager = {
       'Lease agreement generation feature is in development.\n\nThis will create customized lease agreements based on tenant information.',
       SpreadsheetApp.getUi().ButtonSet.OK
     );
+  },
+
+  /**
+   * Create PDF rent invoice
+   */
+  createRentInvoice: function(data) {
+    const doc = DocumentApp.create(`Invoice - ${data.tenantName} - ${data.monthYear}`);
+    const body = doc.getBody();
+
+    body.appendParagraph('Belvedere White House Rental').setHeading(DocumentApp.ParagraphHeading.HEADING1);
+    body.appendParagraph(`Invoice for ${data.tenantName}`).setHeading(DocumentApp.ParagraphHeading.HEADING2);
+    body.appendParagraph(`Room: ${data.roomNumber}`);
+    if (data.email) body.appendParagraph(`Email: ${data.email}`);
+    if (data.phone) body.appendParagraph(`Phone: ${data.phone}`);
+    body.appendParagraph(`Period: ${data.monthYear}`);
+    body.appendParagraph(`Rent Due: ${Utils.formatCurrency(data.rent)}`);
+    body.appendParagraph(`Due Date: ${data.dueDate}`);
+    body.appendParagraph('Thank you for your prompt payment.');
+
+    doc.saveAndClose();
+    const pdf = doc.getAs(MimeType.PDF);
+    DriveApp.getFileById(doc.getId()).setTrashed(true);
+    return pdf;
+  },
+
+  /**
+   * Create PDF move-out report
+   */
+  createMoveOutReport: function(data) {
+    const doc = DocumentApp.create(`Move-Out Report - ${data.tenantName}`);
+    const body = doc.getBody();
+
+    body.appendParagraph('Belvedere White House Rental').setHeading(DocumentApp.ParagraphHeading.HEADING1);
+    body.appendParagraph('Move-Out Report').setHeading(DocumentApp.ParagraphHeading.HEADING2);
+    body.appendParagraph(`Tenant: ${data.tenantName}`);
+    body.appendParagraph(`Room: ${data.roomNumber}`);
+    body.appendParagraph(`Move-Out Date: ${Utils.formatDate(data.moveOutDate)}`);
+    body.appendParagraph(`Condition: ${data.roomCondition}`);
+    body.appendParagraph(`Deposit Refund: ${Utils.formatCurrency(data.depositRefund)}`);
+    if (data.deductions > 0) {
+      body.appendParagraph(`Deductions: ${Utils.formatCurrency(data.deductions)}`);
+      if (data.deductionReason) body.appendParagraph(`Reason: ${data.deductionReason}`);
+    }
+    if (data.finalNotes) body.appendParagraph(data.finalNotes);
+
+    doc.saveAndClose();
+    const pdf = doc.getAs(MimeType.PDF);
+    DriveApp.getFileById(doc.getId()).setTrashed(true);
+    return pdf;
   }
 };
 
@@ -668,6 +724,15 @@ function monthlyRentReminders() {
   }
 }
 
+function weeklyLatePaymentAlerts() {
+  try {
+    Logger.log('Running weekly late payment alerts...');
+    TenantManager.sendLatePaymentAlerts();
+  } catch (error) {
+    Logger.log(`Error in weekly late payment alerts: ${error.toString()}`);
+  }
+}
+
 /**
  * Main Menu Creation - Enhanced with new features
  */
@@ -1077,6 +1142,23 @@ function customizeSystemSettings() { SettingsManager.customizeSystemSettings(); 
 function exportSystemBackup() { DataManager.exportSystemData(); }
 function importSystemData() { DataManager.importSystemData(); }
 function configureEmailTemplates() { EmailManager.configureEmailTemplates(); }
+
+// Tenant management wrappers
+function showTenantDashboard() { TenantManager.showTenantDashboard(); }
+function checkAllPaymentStatus() { TenantManager.checkAllPaymentStatus(); }
+function sendRentReminders() { TenantManager.sendRentReminders(); }
+function sendLatePaymentAlerts() { TenantManager.sendLatePaymentAlerts(); }
+function sendMonthlyInvoices() { TenantManager.sendMonthlyInvoices(); }
+function markPaymentReceived() { TenantManager.markPaymentReceived(); }
+function processMoveIn() { TenantManager.processMoveIn(); }
+function processMoveOut() { TenantManager.processMoveOut(); }
+
+// Guest management wrappers
+function showTodayGuestActivity() { GuestManager.showTodayGuestActivity(); }
+function checkGuestRoomAvailability() { GuestManager.checkGuestRoomAvailability(); }
+function processGuestCheckIn() { GuestManager.processGuestCheckIn(); }
+function processGuestCheckOut() { GuestManager.processGuestCheckOut(); }
+function showGuestRoomAnalytics() { GuestManager.showGuestRoomAnalytics(); }
 
 // Forms & Documents functions
 function createAllSystemForms() { FormManager.createAllSystemForms(); }
