@@ -193,11 +193,20 @@ Thank you for your interest in our community!
       .setHelpText('Any accessibility needs or special accommodation requests');
     
     // File Upload for Proof of Income
-    form.addFileUploadItem()
-      .setTitle('Proof of Income *')
-      .setRequired(true)
-      .setHelpText('Upload recent pay stub, bank statement, or employment letter (PDF, JPG, PNG)')
-      .setFolderName('Belvedere White House Rental - Applications');
+    if (typeof form.addFileUploadItem === 'function') {
+      // Workspace domains support file upload items
+      form.addFileUploadItem()
+        .setTitle('Proof of Income *')
+        .setRequired(true)
+        .setHelpText('Upload recent pay stub, bank statement, or employment letter (PDF, JPG, PNG)')
+        .setFolderName('Belvedere White House Rental - Applications');
+    } else {
+      // Fallback for personal accounts where file uploads are not supported
+      form.addParagraphTextItem()
+        .setTitle('Proof of Income (Link) *')
+        .setRequired(true)
+        .setHelpText('Provide a link to a proof of income document in Google Drive or other cloud storage');
+    }
     
     // Agreement
     const agreementItem = form.addCheckboxItem();
