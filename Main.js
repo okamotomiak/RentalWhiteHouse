@@ -325,7 +325,7 @@ const MaintenanceManager = {
           </div>
           
           <div style="margin-top: 20px; text-align: center;">
-            <button onclick="google.script.run.createUrgentMaintenanceRequest()">Create Urgent Request</button>
+            <button onclick="google.script.run.showCreateMaintenanceRequestPanel()">Create Request</button>
             <button onclick="google.script.run.showMaintenanceDashboard()">Full Dashboard</button>
           </div>
         </div>
@@ -390,6 +390,73 @@ const MaintenanceManager = {
       ui.ButtonSet.OK
     );
   },
+
+  showCreateMaintenanceRequestPanel: function() {
+    const html = HtmlService.createHtmlOutput(`
+      <div style="font-family: Arial, sans-serif; padding:20px;">
+        <h2>Create Maintenance Request</h2>
+        <label>Room/Area<br><input id="loc" style="width:100%"></label><br><br>
+        <label>Issue Type<br><input id="type" style="width:100%"></label><br><br>
+        <label>Priority<br>
+          <select id="priority" style="width:100%">
+            <option>Low</option>
+            <option>Medium</option>
+            <option>High</option>
+          </select>
+        </label><br><br>
+        <label>Description<br><textarea id="desc" style="width:100%"></textarea></label><br><br>
+        <label>Reported By<br><input id="reported" style="width:100%"></label><br><br>
+        <label>Contact Info<br><input id="contact" style="width:100%"></label><br><br>
+        <label>Assigned To<br><input id="assigned" style="width:100%"></label><br><br>
+        <label>Estimated Cost<br><input id="est" type="number" style="width:100%" step="0.01"></label><br><br>
+        <div style="text-align:center;">
+          <button onclick="submitReq()">Submit</button>
+          <button onclick="google.script.host.close()">Cancel</button>
+        </div>
+        <script>
+          function submitReq(){
+            const data={
+              location:document.getElementById('loc').value,
+              issueType:document.getElementById('type').value,
+              priority:document.getElementById('priority').value,
+              description:document.getElementById('desc').value,
+              reportedBy:document.getElementById('reported').value,
+              contact:document.getElementById('contact').value,
+              assignedTo:document.getElementById('assigned').value,
+              estCost:document.getElementById('est').value
+            };
+            google.script.run.withSuccessHandler(()=>{google.script.host.close();}).createMaintenanceRequest(data);
+          }
+        </script>
+      </div>
+    `).setWidth(400).setHeight(600);
+    SpreadsheetApp.getUi().showModalDialog(html,'New Maintenance Request');
+  },
+
+  createMaintenanceRequest: function(data) {
+    const requestId = Utils.generateId('MR');
+    const row = [
+      requestId,
+      new Date(),
+      data.location || '',
+      data.issueType || '',
+      data.priority || 'Low',
+      data.description || '',
+      data.reportedBy || 'Property Manager',
+      data.contact || CONFIG.SYSTEM.MANAGER_EMAIL,
+      data.assignedTo || 'Maintenance Team',
+      CONFIG.STATUS.MAINTENANCE.OPEN,
+      parseFloat(data.estCost) || 0,
+      0,
+      '',
+      '',
+      '',
+      0,
+      '',
+      ''
+    ];
+    SheetManager.addRow(CONFIG.SHEETS.MAINTENANCE, row);
+  },
   
   showMaintenanceDashboard: function() {
     try {
@@ -409,39 +476,63 @@ const MaintenanceManager = {
         }
       });
       
+      const costByCategory = {};
+      maintenanceData.forEach(r => {
+        const category = r[3] || 'Other';
+        const cost = r[11] || 0;
+        costByCategory[category] = (costByCategory[category] || 0) + cost;
+      });
+      const categoryList = Object.entries(costByCategory)
+        .sort(([,a],[,b]) => b-a)
+        .map(([c,v]) => `<li>${c}: ${Utils.formatCurrency(v)}</li>`)
+        .join('');
+
       const html = HtmlService.createHtmlOutput(`
-        <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <div style="font-family: Arial, sans-serif; padding:20px;">
           <h2>📊 Maintenance Dashboard</h2>
-          
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
-            <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; text-align: center;">
-              <h3 style="margin: 0; color: #1976d2;">Total Requests</h3>
-              <p style="font-size: 24px; margin: 5px 0; font-weight: bold;">${maintenanceData.length}</p>
+          <div style="margin-bottom:10px;text-align:center;">
+            <button onclick="showSection('dash')">Dashboard</button>
+            <button onclick="showSection('cost')">Cost Report</button>
+          </div>
+          <div id="dash">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:30px;">
+              <div style="background:#e3f2fd;padding:15px;border-radius:8px;text-align:center;">
+                <h3 style="margin:0;color:#1976d2;">Total Requests</h3>
+                <p style="font-size:24px;margin:5px 0;font-weight:bold;">${maintenanceData.length}</p>
+              </div>
+              <div style="background:#fff3e0;padding:15px;border-radius:8px;text-align:center;">
+                <h3 style="margin:0;color:#f57c00;">Total Cost</h3>
+                <p style="font-size:24px;margin:5px 0;font-weight:bold;">${Utils.formatCurrency(totalCost)}</p>
+              </div>
+              <div style="background:#e8f5e8;padding:15px;border-radius:8px;text-align:center;">
+                <h3 style="margin:0;color:#388e3c;">Completed</h3>
+                <p style="font-size:24px;margin:5px 0;font-weight:bold;">${completedRequests}</p>
+              </div>
             </div>
-            <div style="background: #fff3e0; padding: 15px; border-radius: 8px; text-align: center;">
-              <h3 style="margin: 0; color: #f57c00;">Total Cost</h3>
-              <p style="font-size: 24px; margin: 5px 0; font-weight: bold;">${Utils.formatCurrency(totalCost)}</p>
-            </div>
-            <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; text-align: center;">
-              <h3 style="margin: 0; color: #388e3c;">Completed</h3>
-              <p style="font-size: 24px; margin: 5px 0; font-weight: bold;">${completedRequests}</p>
+            <h3>📈 Maintenance Performance</h3>
+            <div style="background:#f5f5f5;padding:15px;border-radius:8px;">
+              <p><strong>Average Cost per Request:</strong> ${Utils.formatCurrency(totalCost/Math.max(maintenanceData.length,1))}</p>
+              <p><strong>Completion Rate:</strong> ${Math.round((completedRequests/Math.max(maintenanceData.length,1))*100)}%</p>
+              <p><strong>Most Common Issue:</strong> Plumbing (based on sample data)</p>
             </div>
           </div>
-          
-          <h3>📈 Maintenance Performance</h3>
-          <div style="background: #f5f5f5; padding: 15px; border-radius: 8px;">
-            <p><strong>Average Cost per Request:</strong> ${Utils.formatCurrency(totalCost / Math.max(maintenanceData.length, 1))}</p>
-            <p><strong>Completion Rate:</strong> ${Math.round((completedRequests / Math.max(maintenanceData.length, 1)) * 100)}%</p>
-            <p><strong>Most Common Issue:</strong> Plumbing (based on sample data)</p>
+          <div id="cost" style="display:none;">
+            <div style="background:#e3f2fd;padding:20px;border-radius:8px;margin-bottom:20px;text-align:center;">
+              <h3 style="margin:0;">Total Maintenance Costs</h3>
+              <p style="font-size:36px;margin:10px 0;font-weight:bold;color:#1976d2;">${Utils.formatCurrency(totalCost)}</p>
+              <small>Based on ${maintenanceData.length} requests</small>
+            </div>
+            <h3>💸 Costs by Category</h3>
+            <ul style="background:#f5f5f5;padding:20px;border-radius:8px;">${categoryList}</ul>
           </div>
-          
-          <div style="margin-top: 20px; text-align: center;">
-            <button onclick="google.script.run.generateMaintenanceCostReport()">Generate Cost Report</button>
-          </div>
+          <script>
+            function showSection(id){
+              document.getElementById('dash').style.display=id==='dash'?'block':'none';
+              document.getElementById('cost').style.display=id==='cost'?'block':'none';
+            }
+          </script>
         </div>
-      `)
-        .setWidth(800)
-        .setHeight(600);
+      `).setWidth(800).setHeight(600);
       
       SpreadsheetApp.getUi().showModalDialog(html, 'Maintenance Dashboard');
       
@@ -656,9 +747,8 @@ function onOpen() {
     
     .addSubMenu(ui.createMenu('🔧 Maintenance System')
       .addItem('📝 View Open Requests', 'showMaintenanceRequests')
-      .addItem('⚡ Create Urgent Request', 'createUrgentMaintenanceRequest')
-      .addItem('📊 Maintenance Dashboard', 'showMaintenanceDashboard')
-      .addItem('💰 Maintenance Cost Report', 'generateMaintenanceCostReport'))
+      .addItem('🆕 New Maintenance Request', 'showCreateMaintenanceRequestPanel')
+      .addItem('📊 Maintenance Dashboard', 'showMaintenanceDashboard'))
     
     .addSubMenu(ui.createMenu('📊 Financial Reports')
       .addItem('📊 Financial Dashboard', 'showFinancialDashboard')
@@ -666,9 +756,7 @@ function onOpen() {
     
     .addSubMenu(ui.createMenu('📋 Forms & Documents')
       .addItem('🏗️ Create All Forms', 'createAllSystemForms')
-      .addItem('🔗 View Form Links', 'showAllFormLinks')
-      .addItem('📄 Generate Lease Agreement', 'generateLeaseAgreement')
-      .addItem('📋 Document Manager', 'showDocumentManager'))
+      .addItem('📄 Open White House Rent Agreement', 'openWhiteHouseRentAgreement'))
     
     .addSubMenu(ui.createMenu('⚙️ System Setup')
       .addItem('🔔 Setup Automated Triggers', 'setupAllSystemTriggers')
@@ -1057,15 +1145,17 @@ function showGuestRoomAnalytics() { GuestManager.showGuestRoomAnalytics(); }
 
 // Forms & Documents functions
 function createAllSystemForms() { FormManager.createAllSystemForms(); }
-function showAllFormLinks() { FormManager.showAllFormLinks(); }
-function generateLeaseAgreement() { DocumentManager.generateLeaseAgreement(); }
-function showDocumentManager() { DocumentManager.showDocumentManager(); }
+
 
 // Maintenance functions  
 function showMaintenanceRequests() { MaintenanceManager.showMaintenanceRequests(); }
-function createUrgentMaintenanceRequest() { MaintenanceManager.createUrgentMaintenanceRequest(); }
 function showMaintenanceDashboard() { MaintenanceManager.showMaintenanceDashboard(); }
-function generateMaintenanceCostReport() { MaintenanceManager.generateMaintenanceCostReport(); }
+function showCreateMaintenanceRequestPanel() { MaintenanceManager.showCreateMaintenanceRequestPanel(); }
+function openWhiteHouseRentAgreement() {
+  const url = 'https://docs.google.com/document/d/0Bx6Gh0XDCgyockZ2SmFMZTB2Y2c2MG5fZmE4UE50ejRsaWtN/edit?usp=sharing&ouid=102218108286145696888&resourcekey=0-WJzLkRaudCPWAOqc6Gv50w&rtpof=true&sd=true';
+  const html = HtmlService.createHtmlOutput(`<script>window.open('${url}', '_blank');google.script.host.close();</script>`);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Open Agreement');
+}
 
 // Financial functions
 function generateMonthlyFinancialReport() { FinancialManager.generateMonthlyFinancialReport(); }
