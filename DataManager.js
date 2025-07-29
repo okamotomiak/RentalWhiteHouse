@@ -407,7 +407,6 @@ const DataManager = {
       this.createSampleTenants();
       this.createSampleGuestRooms();
       this.createSampleBudgetEntries();
-      this.createSampleGuestBookings();
       this.createSampleMaintenanceRequests();
       this.createSampleApplications();
       this.createSampleMoveOuts();
