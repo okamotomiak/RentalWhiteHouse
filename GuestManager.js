@@ -34,7 +34,7 @@ const GuestManager = {
   },
   
   /**
-   * Column indexes for Guest Bookings sheet (1-based)
+   * Column indexes for Guest Room Bookings sheet (1-based)
    */
   BOOKING_COL: {
     BOOKING_ID: 1,
@@ -237,7 +237,7 @@ const GuestManager = {
    */
   showProcessCheckInPanel: function() {
     try {
-      const data = SheetManager.getAllData('Guest Room Bookings');
+      const data = SheetManager.getAllData(CONFIG.SHEETS.GUEST_BOOKINGS);
       const options = data.map((row, i) => `<option value="${i}">${row[1]}</option>`).join('');
 
       const html = HtmlService.createHtmlOutput(`
@@ -391,7 +391,7 @@ const GuestManager = {
       const sheet = SpreadsheetApp.getActiveSheet();
       
       if (sheet.getName() !== CONFIG.SHEETS.GUEST_BOOKINGS) {
-        ui.alert('Please select a booking in the Guest Bookings sheet.');
+        ui.alert('Please select a booking in the Guest Room Bookings sheet.');
         return;
       }
       
@@ -457,7 +457,7 @@ const GuestManager = {
       const sheet = SpreadsheetApp.getActiveSheet();
       
       if (sheet.getName() !== CONFIG.SHEETS.GUEST_BOOKINGS) {
-        ui.alert('Please select a booking in the Guest Bookings sheet.');
+        ui.alert('Please select a booking in the Guest Room Bookings sheet.');
         return;
       }
       
@@ -559,7 +559,7 @@ const GuestManager = {
    */
   processCheckInFromForm: function(rowNumber) {
     try {
-      const formSheet = SheetManager.getSheet('Guest Room Bookings');
+      const formSheet = SheetManager.getSheet(CONFIG.SHEETS.GUEST_BOOKINGS);
       const values = formSheet.getRange(rowNumber, 1, 1, formSheet.getLastColumn()).getValues()[0];
 
       const guestName = values[1];
@@ -603,6 +603,99 @@ const GuestManager = {
 
     } catch (error) {
       handleSystemError(error, 'processCheckInFromForm');
+    }
+  },
+
+  /**
+   * Show panel to process guest check-out from occupied rooms
+   */
+  showProcessCheckOutPanel: function() {
+    try {
+      const sheet = SheetManager.getSheet(CONFIG.SHEETS.GUEST_ROOMS);
+      const data = sheet.getDataRange().getValues();
+      const occupied = [];
+
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        if (row[this.ROOM_COL.STATUS - 1] === 'Occupied') {
+          occupied.push({
+            row: i + 1,
+            guest: row[this.ROOM_COL.CURRENT_GUEST - 1],
+            room: row[this.ROOM_COL.ROOM_NUMBER - 1],
+            checkIn: row[this.ROOM_COL.CHECK_IN_DATE - 1],
+            checkOut: row[this.ROOM_COL.CHECK_OUT_DATE - 1]
+          });
+        }
+      }
+
+      if (occupied.length === 0) {
+        SpreadsheetApp.getUi().alert('No guests currently checked in.');
+        return;
+      }
+
+      const options = occupied.map(o => `<option value="${o.row}">${o.guest} - Room ${o.room}</option>`).join('');
+
+      const html = HtmlService.createHtmlOutput(`
+        <div style="font-family: Arial, sans-serif; padding:20px;">
+          <h3>Process Check-Out</h3>
+          <label>Guest:</label>
+          <select id="guestSelect" onchange="fillFields()">
+            <option value="">Select...</option>
+            ${options}
+          </select>
+          <div style="margin-top:10px;">
+            <label>Room:</label><input type="text" id="room" style="width:100%" readonly><br>
+            <label>Check-In:</label><input type="text" id="checkin" style="width:100%" readonly><br>
+            <label>Check-Out:</label><input type="text" id="checkout" style="width:100%" readonly><br>
+          </div>
+          <button onclick="processCO()" style="margin-top:10px;">Process Check-Out</button>
+          <script>
+            const data = ${JSON.stringify(occupied)};
+            function fillFields(){
+              const val = document.getElementById('guestSelect').value;
+              const rec = data.find(r => r.row == val);
+              if(!rec){return;}
+              document.getElementById('room').value = rec.room;
+              document.getElementById('checkin').value = rec.checkIn;
+              document.getElementById('checkout').value = rec.checkOut;
+            }
+            function processCO(){
+              const val = document.getElementById('guestSelect').value;
+              if(val=='') return;
+              google.script.run.processRoomCheckOut(Number(val));
+              google.script.host.close();
+            }
+          </script>
+        </div>
+      `).setWidth(400).setHeight(400);
+
+      SpreadsheetApp.getUi().showModalDialog(html, 'Process Check-Out');
+
+    } catch (error) {
+      handleSystemError(error, 'showProcessCheckOutPanel');
+    }
+  },
+
+  /**
+   * Process check-out for a room row
+   */
+  processRoomCheckOut: function(rowNumber) {
+    try {
+      const sheet = SheetManager.getSheet(CONFIG.SHEETS.GUEST_ROOMS);
+      const guestName = sheet.getRange(rowNumber, this.ROOM_COL.CURRENT_GUEST).getValue();
+      const roomNum = sheet.getRange(rowNumber, this.ROOM_COL.ROOM_NUMBER).getValue();
+
+      sheet.getRange(rowNumber, this.ROOM_COL.STATUS).setValue('Available');
+      sheet.getRange(rowNumber, this.ROOM_COL.CURRENT_GUEST).clearContent();
+      sheet.getRange(rowNumber, this.ROOM_COL.CHECK_IN_DATE).clearContent();
+      sheet.getRange(rowNumber, this.ROOM_COL.CHECK_OUT_DATE).clearContent();
+      sheet.getRange(rowNumber, this.ROOM_COL.BOOKING_STATUS).setValue(CONFIG.STATUS.BOOKING.CHECKED_OUT);
+      sheet.getRange(rowNumber, this.ROOM_COL.LAST_CLEANED).setValue(new Date());
+
+      SpreadsheetApp.getUi().alert('Check-Out Complete', `Check-out completed for ${guestName} from room ${roomNum}.`, SpreadsheetApp.getUi().ButtonSet.OK);
+
+    } catch (error) {
+      handleSystemError(error, 'processRoomCheckOut');
     }
   },
   

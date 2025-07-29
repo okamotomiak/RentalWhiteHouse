@@ -12,7 +12,7 @@ const CONFIG = {
     APPLICATIONS: 'Tenant Applications',
     MOVEOUTS: 'Move-Out Requests',
     GUEST_ROOMS: 'Guest Rooms',
-    GUEST_BOOKINGS: 'Guest Bookings',
+    GUEST_BOOKINGS: 'Guest Room Bookings',
     MAINTENANCE: 'Maintenance Requests',
     DOCUMENTS: 'Documents',
     SETTINGS: 'System Settings'
@@ -710,7 +710,6 @@ function initializeCompleteSystem() {
     
     // Create sample data (including missing sample data)
     DataManager.createSampleData();
-    DataManager.createSampleGuestBookings();
     DataManager.createSampleMaintenanceRequests();
     // Reapply formatting so dropdowns and other validations are added
     SheetManager.applySheetSpecificFormatting(SpreadsheetApp.getActiveSpreadsheet());
