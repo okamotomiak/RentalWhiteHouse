@@ -82,19 +82,22 @@ const DataManager = {
   createSampleGuestRooms: function() {
     const sampleGuestRooms = [
       [
-        'G1', 'Executive Suite', 85, 510, 1800, 'Executive Suite', 2,
+        '', '', '', '', 'G1', 'Executive Suite', 'Executive Suite', 2,
         'Queen bed, Private bath, Mini fridge, Desk, City view', 'Available',
-        '', '', '', new Date(), 'Recently deep cleaned'
+        '', '', '', '', '', '', 85, 510, 1800, '', '', '', '', new Date(),
+        'Recently deep cleaned'
       ],
       [
-        'G2', 'Comfort Room', 65, 390, 1400, 'Standard Room', 2,
+        '', '', '', '', 'G2', 'Comfort Room', 'Standard Room', 2,
         'Double bed, Shared bath, WiFi, Coffee maker', 'Available',
-        '', '', '', new Date(), 'Standard maintenance completed'
+        '', '', '', '', '', '', 65, 390, 1400, '', '', '', '', new Date(),
+        'Standard maintenance completed'
       ],
       [
-        'G3', 'Budget Room', 55, 330, 1200, 'Economy Room', 1,
+        '', '', '', '', 'G3', 'Budget Room', 'Economy Room', 1,
         'Single bed, Shared bath, Basic amenities', 'Maintenance',
-        '', '', '', '', 'Plumbing repair scheduled'
+        '', '', '', '', '', '', '', 55, 330, 1200, '', '', '', '', new Date(),
+        'Plumbing repair scheduled'
       ]
     ];
     

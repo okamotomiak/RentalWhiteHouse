@@ -29,9 +29,18 @@ const FormManager = {
         publishedUrl: moveOutForm.getPublishedUrl(),
         id: moveOutForm.getId()
       });
+
+      // Create Guest Room Booking Form
+      const guestBookingForm = this.createGuestRoomBookingForm();
+      forms.push({
+        name: 'Guest Room Bookings',
+        editUrl: guestBookingForm.getEditUrl(),
+        publishedUrl: guestBookingForm.getPublishedUrl(),
+        id: guestBookingForm.getId()
+      });
       
       // Setup form triggers for automatic processing
-      this.setupFormTriggers(tenantForm, moveOutForm);
+      this.setupFormTriggers(tenantForm, moveOutForm, guestBookingForm);
       
       // Store form information for future reference
       this.storeFormInformation(forms);
@@ -337,11 +346,58 @@ Thank you for being a valued resident!
 
     return form;
   },
+
+  /**
+   * Create guest room booking form
+   */
+  createGuestRoomBookingForm: function() {
+    const form = FormApp.create('Guest Room Bookings');
+
+    form.addTextItem()
+      .setTitle('Guest Name')
+      .setRequired(true);
+
+    form.addTextItem()
+      .setTitle('Email')
+      .setRequired(true)
+      .setValidation(FormApp.createTextValidation().requireTextIsEmail().build());
+
+    form.addTextItem()
+      .setTitle('Phone');
+
+    form.addTextItem()
+      .setTitle('Room Number');
+
+    form.addDateItem()
+      .setTitle('Check-In Date')
+      .setRequired(true);
+
+    form.addDateItem()
+      .setTitle('Check-Out Date')
+      .setRequired(true);
+
+    form.addTextItem()
+      .setTitle('Number of Nights')
+      .setValidation(FormApp.createTextValidation().requireNumber().build());
+
+    form.addTextItem()
+      .setTitle('Number of Guests')
+      .setValidation(FormApp.createTextValidation().requireNumber().build());
+
+    form.addParagraphTextItem()
+      .setTitle('Purpose of Visit');
+
+    form.addParagraphTextItem()
+      .setTitle('Special Requests');
+
+    this.linkFormToSheet(form, 'Guest Room Bookings');
+    return form;
+  },
   
   /**
    * Setup automatic form processing triggers
    */
-  setupFormTriggers: function(tenantForm, moveOutForm) {
+  setupFormTriggers: function(tenantForm, moveOutForm, guestBookingForm) {
     try {
       // Create triggers for form submissions
       ScriptApp.newTrigger('processTenantApplicationSubmission')
@@ -353,6 +409,13 @@ Thank you for being a valued resident!
         .forForm(moveOutForm)
         .onFormSubmit()
         .create();
+
+      if (guestBookingForm) {
+        ScriptApp.newTrigger('processGuestBookingSubmission')
+          .forForm(guestBookingForm)
+          .onFormSubmit()
+          .create();
+      }
       
       Logger.log('Form triggers created successfully');
       
@@ -631,6 +694,28 @@ Submitted: ${timestamp.toLocaleString()}`;
     } catch (error) {
       Logger.log(`Error processing move-out request: ${error.toString()}`);
     }
+  },
+
+  /**
+   * Process guest room booking form submission
+   */
+  processGuestBookingSubmission: function(e) {
+    try {
+      Logger.log('Processing guest booking submission...');
+
+      if (!e || !e.values) {
+        Logger.log('No form data received');
+        return;
+      }
+
+      const data = e.values;
+      const bookingId = Utils.generateId('BK');
+
+      Logger.log(`Processed guest booking: ${bookingId}`);
+
+    } catch (error) {
+      Logger.log(`Error processing guest booking: ${error.toString()}`);
+    }
   }
 };
 
@@ -641,6 +726,10 @@ function processTenantApplicationSubmission(e) {
 
 function processMoveOutRequestSubmission(e) {
   FormManager.processMoveOutRequestSubmission(e);
+}
+
+function processGuestBookingSubmission(e) {
+  FormManager.processGuestBookingSubmission(e);
 }
 
 Logger.log('FormManager module loaded successfully');
