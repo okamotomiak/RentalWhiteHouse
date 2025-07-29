@@ -34,7 +34,7 @@ const GuestManager = {
   },
   
   /**
-   * Column indexes for Guest Bookings sheet (1-based)
+   * Column indexes for Guest Room Bookings sheet (1-based)
    */
   BOOKING_COL: {
     BOOKING_ID: 1,
@@ -391,7 +391,7 @@ const GuestManager = {
       const sheet = SpreadsheetApp.getActiveSheet();
       
       if (sheet.getName() !== CONFIG.SHEETS.GUEST_BOOKINGS) {
-        ui.alert('Please select a booking in the Guest Bookings sheet.');
+        ui.alert('Please select a booking in the Guest Room Bookings sheet.');
         return;
       }
       
@@ -457,7 +457,7 @@ const GuestManager = {
       const sheet = SpreadsheetApp.getActiveSheet();
       
       if (sheet.getName() !== CONFIG.SHEETS.GUEST_BOOKINGS) {
-        ui.alert('Please select a booking in the Guest Bookings sheet.');
+        ui.alert('Please select a booking in the Guest Room Bookings sheet.');
         return;
       }
       
