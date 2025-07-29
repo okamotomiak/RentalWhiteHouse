@@ -23,6 +23,20 @@ const TenantManager = {
     LEASE_END_DATE: 14,
     NOTES: 15
   },
+
+  /**
+   * Column indexes for Tenant Applications sheet (1-based)
+   */
+  APP_COL: {
+    APPLICATION_ID: 1,
+    TIMESTAMP: 2,
+    FULL_NAME: 3,
+    EMAIL: 4,
+    PHONE: 5,
+    CURRENT_ADDRESS: 6,
+    MOVE_IN_DATE: 7,
+    PREFERRED_ROOM: 8
+  },
   
   /**
    * Check and update payment status for all tenants
@@ -327,59 +341,80 @@ const TenantManager = {
   processMoveIn: function() {
     try {
       const ui = SpreadsheetApp.getUi();
-      
-      // Get available vacant rooms
+
+      const applications = SheetManager.getAllData(CONFIG.SHEETS.APPLICATIONS);
       const vacantRooms = this.getVacantRooms();
-      
+
+      if (applications.length === 0) {
+        ui.alert('No tenant application responses found.');
+        return;
+      }
+
       if (vacantRooms.length === 0) {
         ui.alert('No vacant rooms available.');
         return;
       }
-      
-      // Show move-in form
+
+      const appData = applications.map((row, i) => ({
+        index: i,
+        name: row[this.APP_COL.FULL_NAME - 1],
+        email: row[this.APP_COL.EMAIL - 1],
+        phone: row[this.APP_COL.PHONE - 1],
+        moveIn: row[this.APP_COL.MOVE_IN_DATE - 1],
+        room: (row[this.APP_COL.PREFERRED_ROOM - 1] || '').replace(/Room\s*/, '')
+      })).filter(a => a.name);
+
+      const options = appData.map((a, i) => `<option value="${i}">${a.name}</option>`).join('');
+      const roomOptions = vacantRooms.map(room =>
+        `<option value="${room.number}">Room ${room.number} - ${Utils.formatCurrency(room.rent)}/month</option>`
+      ).join('');
+
       const html = HtmlService.createHtmlOutput(`
         <div style="font-family: Arial, sans-serif; padding: 20px;">
           <h3>Process Tenant Move-In</h3>
+          <label>Applicant:</label>
+          <select id="appSelect" onchange="fillApp()" style="width:100%">
+            <option value="">Select Applicant</option>
+            ${options}
+          </select>
           <form id="moveInForm">
-            <table>
+            <table style="margin-top:10px;">
               <tr>
                 <td><label>Room Number:</label></td>
                 <td>
-                  <select name="roomNumber" required>
+                  <select id="roomNumber" name="roomNumber" required>
                     <option value="">Select Room</option>
-                    ${vacantRooms.map(room => 
-                      `<option value="${room.number}">Room ${room.number} - ${Utils.formatCurrency(room.rent)}/month</option>`
-                    ).join('')}
+                    ${roomOptions}
                   </select>
                 </td>
               </tr>
               <tr>
                 <td><label>Tenant Name:</label></td>
-                <td><input type="text" name="tenantName" required style="width: 200px;"></td>
+                <td><input type="text" id="tenantName" name="tenantName" required style="width:200px;"></td>
               </tr>
               <tr>
                 <td><label>Email:</label></td>
-                <td><input type="email" name="email" required style="width: 200px;"></td>
+                <td><input type="email" id="email" name="email" required style="width:200px;"></td>
               </tr>
               <tr>
                 <td><label>Phone:</label></td>
-                <td><input type="tel" name="phone" required style="width: 200px;"></td>
+                <td><input type="tel" id="phone" name="phone" required style="width:200px;"></td>
               </tr>
               <tr>
                 <td><label>Move-in Date:</label></td>
-                <td><input type="date" name="moveInDate" required></td>
+                <td><input type="date" id="moveInDate" name="moveInDate" required></td>
               </tr>
               <tr>
                 <td><label>Security Deposit:</label></td>
-                <td><input type="number" name="securityDeposit" step="0.01" required style="width: 100px;"></td>
+                <td><input type="number" name="securityDeposit" step="0.01" required style="width:100px;"></td>
               </tr>
               <tr>
                 <td><label>Negotiated Rent:</label></td>
-                <td><input type="number" name="negotiatedRent" step="0.01" style="width: 100px;"> (optional)</td>
+                <td><input type="number" name="negotiatedRent" step="0.01" style="width:100px;"> (optional)</td>
               </tr>
               <tr>
                 <td><label>Emergency Contact:</label></td>
-                <td><input type="text" name="emergencyContact" style="width: 300px;"></td>
+                <td><input type="text" name="emergencyContact" style="width:300px;"></td>
               </tr>
               <tr>
                 <td><label>Lease End Date:</label></td>
@@ -387,7 +422,7 @@ const TenantManager = {
               </tr>
               <tr>
                 <td><label>Notes:</label></td>
-                <td><textarea name="notes" rows="3" style="width: 300px;"></textarea></td>
+                <td><textarea name="notes" rows="3" style="width:300px;"></textarea></td>
               </tr>
             </table>
             <br>
@@ -395,16 +430,33 @@ const TenantManager = {
             <button type="button" onclick="google.script.host.close()">Cancel</button>
           </form>
         </div>
-        
+
         <script>
+          const apps = ${JSON.stringify(appData)};
+          function fillApp(){
+            const idx = document.getElementById('appSelect').value;
+            if(idx===''){return;}
+            const a = apps[idx];
+            document.getElementById('tenantName').value = a.name || '';
+            document.getElementById('email').value = a.email || '';
+            document.getElementById('phone').value = a.phone || '';
+            if(a.moveIn){
+              try{
+                const d = new Date(a.moveIn);
+                document.getElementById('moveInDate').value = d.toISOString().slice(0,10);
+              }catch(e){}
+            }
+            const roomSel = document.getElementById('roomNumber');
+            for(let i=0;i<roomSel.options.length;i++){
+              if(roomSel.options[i].value==a.room){roomSel.selectedIndex=i;break;}
+            }
+          }
           function processMoveIn() {
             const form = document.getElementById('moveInForm');
             const formData = new FormData(form);
             const data = Object.fromEntries(formData);
-            
             google.script.run
-              .withSuccessHandler(function(result) {
-                alert('Move-in processed successfully!');
+              .withSuccessHandler(function() {
                 google.script.host.close();
               })
               .withFailureHandler(function(error) {
@@ -415,8 +467,8 @@ const TenantManager = {
         </script>
       `)
         .setWidth(500)
-        .setHeight(600);
-      
+        .setHeight(650);
+
       ui.showModalDialog(html, 'Process Move-In');
       
     } catch (error) {
@@ -493,124 +545,60 @@ const TenantManager = {
   processMoveOut: function() {
     try {
       const ui = SpreadsheetApp.getUi();
-      const sheet = SpreadsheetApp.getActiveSheet();
-      
-      if (sheet.getName() !== CONFIG.SHEETS.TENANTS) {
-        ui.alert('Please select a tenant row in the Tenants sheet.');
+      const data = SheetManager.getAllData(CONFIG.SHEETS.TENANTS);
+
+      const tenants = [];
+      data.forEach((row, i) => {
+        const name = row[this.COL.TENANT_NAME - 1];
+        if (name) {
+          tenants.push({
+            index: i,
+            rowNumber: i + 2,
+            name: name,
+            room: row[this.COL.ROOM_NUMBER - 1]
+          });
+        }
+      });
+
+      if (tenants.length === 0) {
+        ui.alert('No current tenants found.');
         return;
       }
-      
-      const row = sheet.getActiveRange().getRow();
-      if (row <= 1) {
-        ui.alert('Please select a tenant row.');
-        return;
-      }
-      
-      const tenantName = sheet.getRange(row, this.COL.TENANT_NAME).getValue();
-      const roomNumber = sheet.getRange(row, this.COL.ROOM_NUMBER).getValue();
-      const securityDeposit = sheet.getRange(row, this.COL.SECURITY_DEPOSIT).getValue() || 0;
-      
-      if (!tenantName) {
-        ui.alert('No tenant selected or invalid row.');
-        return;
-      }
-      
-      const response = ui.alert(
-        'Process Move-Out',
-        `Process move-out for ${tenantName} (Room ${roomNumber})?`,
-        ui.ButtonSet.YES_NO
-      );
-      
-      if (response !== ui.Button.YES) return;
-      
-      // Show move-out form
+
+      const options = tenants.map((t, i) => `<option value="${i}">${t.name}</option>`).join('');
+
       const html = HtmlService.createHtmlOutput(`
-        <div style="font-family: Arial, sans-serif; padding: 20px;">
-          <h3>Process Move-Out: ${tenantName}</h3>
-          <p><strong>Room:</strong> ${roomNumber}</p>
-          <p><strong>Security Deposit:</strong> ${Utils.formatCurrency(securityDeposit)}</p>
-          
-          <form id="moveOutForm">
-            <input type="hidden" name="rowNumber" value="${row}">
-            <input type="hidden" name="tenantName" value="${tenantName}">
-            <input type="hidden" name="roomNumber" value="${roomNumber}">
-            <input type="hidden" name="securityDeposit" value="${securityDeposit}">
-            
-            <table>
-              <tr>
-                <td><label>Move-Out Date:</label></td>
-                <td><input type="date" name="moveOutDate" required value="${Utils.formatDate(new Date(), 'yyyy-MM-dd')}"></td>
-              </tr>
-              <tr>
-                <td><label>Forwarding Address:</label></td>
-                <td><textarea name="forwardingAddress" rows="3" style="width: 300px;" required></textarea></td>
-              </tr>
-              <tr>
-                <td><label>Room Condition:</label></td>
-                <td>
-                  <select name="roomCondition" required>
-                    <option value="">Select Condition</option>
-                    <option value="Excellent">Excellent - No deductions</option>
-                    <option value="Good">Good - Minor cleaning needed</option>
-                    <option value="Fair">Fair - Some repairs/deep cleaning</option>
-                    <option value="Poor">Poor - Significant repairs needed</option>
-                  </select>
-                </td>
-              </tr>
-              <tr>
-                <td><label>Deductions Amount:</label></td>
-                <td><input type="number" name="deductions" step="0.01" min="0" max="${securityDeposit}" value="0"></td>
-              </tr>
-              <tr>
-                <td><label>Deduction Reason:</label></td>
-                <td><textarea name="deductionReason" rows="2" style="width: 300px;"></textarea></td>
-              </tr>
-              <tr>
-                <td><label>Keys Returned:</label></td>
-                <td>
-                  <input type="checkbox" name="keysReturned" value="yes" required>
-                  <label>All keys returned</label>
-                </td>
-              </tr>
-              <tr>
-                <td><label>Final Notes:</label></td>
-                <td><textarea name="finalNotes" rows="3" style="width: 300px;"></textarea></td>
-              </tr>
-            </table>
-            <br>
-            <button type="button" onclick="completeMoveOut()">Complete Move-Out</button>
-            <button type="button" onclick="google.script.host.close()">Cancel</button>
-          </form>
-        </div>
-        
-        <script>
-          function completeMoveOut() {
-            const form = document.getElementById('moveOutForm');
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData);
-            
-            if (!data.keysReturned) {
-              alert('Please confirm that all keys have been returned.');
-              return;
+        <div style="font-family: Arial, sans-serif; padding:20px;">
+          <h3>Process Tenant Move-Out</h3>
+          <label>Tenant:</label>
+          <select id="tenantSelect" style="width:100%">
+            <option value="">Select...</option>
+            ${options}
+          </select>
+          <div style="margin-top:10px;">
+            <label>Move-Out Date:</label>
+            <input type="date" id="moveOutDate" value="${Utils.formatDate(new Date(), 'yyyy-MM-dd')}">
+          </div>
+          <button style="margin-top:10px;" onclick="submitMoveOut()">Confirm Move-Out</button>
+          <button style="margin-top:10px;" onclick="google.script.host.close()">Cancel</button>
+          <script>
+            const tenants = ${JSON.stringify(tenants)};
+            function submitMoveOut(){
+              const idx = document.getElementById('tenantSelect').value;
+              if(idx===''){ alert('Please select a tenant'); return; }
+              const d = document.getElementById('moveOutDate').value;
+              const t = tenants[idx];
+              google.script.run
+                .withSuccessHandler(function(){ google.script.host.close(); })
+                .withFailureHandler(function(e){ alert('Error: '+e.message); })
+                .simpleMoveOut({ rowNumber: t.rowNumber, moveOutDate: d });
             }
-            
-            google.script.run
-              .withSuccessHandler(function(result) {
-                alert('Move-out processed successfully!');
-                google.script.host.close();
-              })
-              .withFailureHandler(function(error) {
-                alert('Error: ' + error.message);
-              })
-              .completeMoveOut(data);
-          }
-        </script>
-      `)
-        .setWidth(500)
-        .setHeight(600);
-      
+          </script>
+        </div>
+      `).setWidth(400).setHeight(250);
+
       ui.showModalDialog(html, 'Process Move-Out');
-      
+
     } catch (error) {
       handleSystemError(error, 'processMoveOut');
     }
@@ -697,6 +685,34 @@ const TenantManager = {
       
     } catch (error) {
       Logger.log(`Error in completeMoveOut: ${error.toString()}`);
+      throw error;
+    }
+  },
+
+  /**
+   * Simplified move-out processing used by dropdown panel
+   */
+  simpleMoveOut: function(data) {
+    try {
+      const sheet = SheetManager.getSheet(CONFIG.SHEETS.TENANTS);
+      const rowNumber = parseInt(data.rowNumber);
+      const moveOutDate = new Date(data.moveOutDate);
+
+      sheet.getRange(rowNumber, this.COL.ROOM_STATUS).setValue(CONFIG.STATUS.ROOM.VACANT);
+      sheet.getRange(rowNumber, this.COL.MOVE_OUT_PLANNED).setValue(moveOutDate);
+      sheet.getRange(rowNumber, this.COL.PAYMENT_STATUS).setValue('');
+      sheet.getRange(rowNumber, this.COL.NOTES).setValue(`MOVED OUT: ${Utils.formatDate(moveOutDate)}`);
+      sheet.getRange(rowNumber, this.COL.TENANT_NAME).setValue('');
+      sheet.getRange(rowNumber, this.COL.TENANT_EMAIL).setValue('');
+      sheet.getRange(rowNumber, this.COL.TENANT_PHONE).setValue('');
+      sheet.getRange(rowNumber, this.COL.LAST_PAYMENT).setValue('');
+      sheet.getRange(rowNumber, this.COL.EMERGENCY_CONTACT).setValue('');
+      sheet.getRange(rowNumber, this.COL.LEASE_END_DATE).setValue('');
+
+      return { success: true };
+
+    } catch (error) {
+      Logger.log(`Error in simpleMoveOut: ${error.toString()}`);
       throw error;
     }
   },
