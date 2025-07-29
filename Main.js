@@ -649,7 +649,7 @@ function onOpen() {
       .addItem('📅 Today\'s Arrivals & Departures', 'showTodayGuestActivity')
       .addItem('🔍 Check Room Availability', 'checkGuestRoomAvailability')
       .addItem('✅ Process Check-In', 'showProcessCheckInPanel')
-      .addItem('📤 Process Check-Out', 'processGuestCheckOut')
+      .addItem('📤 Process Check-Out', 'showProcessCheckOutPanel')
       .addItem('📊 Guest Room Analytics', 'showGuestRoomAnalytics')
       .addItem('💲 Dynamic Pricing Analysis', 'analyzeGuestRoomPricing')
       .addItem('📅 Occupancy Calendar', 'showOccupancyCalendar'))
@@ -1050,7 +1050,7 @@ function completeMoveOut(data) { TenantManager.completeMoveOut(data); }
 function showTodayGuestActivity() { GuestManager.showTodayGuestActivity(); }
 function checkGuestRoomAvailability() { GuestManager.checkGuestRoomAvailability(); }
 function processGuestCheckIn() { GuestManager.processGuestCheckIn(); }
-function processGuestCheckOut() { GuestManager.processGuestCheckOut(); }
+function processGuestCheckOut() { GuestManager.showProcessCheckOutPanel(); }
 function showProcessCheckInPanel() { GuestManager.showProcessCheckInPanel(); }
 function processCheckInFromForm(row) { GuestManager.processCheckInFromForm(row); }
 function showGuestRoomAnalytics() { GuestManager.showGuestRoomAnalytics(); }

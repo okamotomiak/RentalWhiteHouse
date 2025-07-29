@@ -378,10 +378,6 @@ Thank you for being a valued resident!
       .setTitle('Check-In Date')
       .setRequired(true);
 
-    form.addDateItem()
-      .setTitle('Check-Out Date')
-      .setRequired(true);
-
     form.addTextItem()
       .setTitle('Number of Nights')
       .setValidation(FormApp.createTextValidation().requireNumber().build());
@@ -481,6 +477,16 @@ Thank you for being a valued resident!
     if (newSheet) {
       newSheet.setName(sheetName);
       SheetManager.cleanHeaderAsterisks(newSheet);
+      if (sheetName === CONFIG.SHEETS.GUEST_BOOKINGS) {
+        const headers = [
+          'Booking ID', 'Timestamp', 'Guest Name', 'Email', 'Phone',
+          'Room Number', 'Check-In Date', 'Check-Out Date', 'Number of Nights',
+          'Number of Guests', 'Purpose of Visit', 'Special Requests',
+          'Total Amount', 'Amount Paid', 'Payment Status', 'Booking Status',
+          'Source', 'Notes'
+        ];
+        newSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+      }
     }
   },
   

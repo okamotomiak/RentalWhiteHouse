@@ -238,7 +238,8 @@ const GuestManager = {
   showProcessCheckInPanel: function() {
     try {
       const data = SheetManager.getAllData(CONFIG.SHEETS.GUEST_BOOKINGS);
-      const options = data.map((row, i) => `<option value="${i}">${row[1]}</option>`).join('');
+      const gCol = this.BOOKING_COL;
+      const options = data.map((row, i) => `<option value="${i}">${row[gCol.GUEST_NAME - 1]}</option>`).join('');
 
       const html = HtmlService.createHtmlOutput(`
         <div style="font-family: Arial, sans-serif; padding:20px;">
@@ -263,12 +264,21 @@ const GuestManager = {
               const idx = document.getElementById('guestSelect').value;
               if(idx===''){return;}
               const d = data[idx];
-              document.getElementById('guestName').value = d[1];
-              document.getElementById('email').value = d[2];
-              document.getElementById('phone').value = d[3];
-              document.getElementById('room').value = d[4];
-              document.getElementById('checkin').value = d[5];
-              document.getElementById('checkout').value = d[6];
+              document.getElementById('guestName').value = d[gCol.GUEST_NAME - 1];
+              document.getElementById('email').value = d[gCol.EMAIL - 1];
+              document.getElementById('phone').value = d[gCol.PHONE - 1];
+              document.getElementById('room').value = d[gCol.ROOM_NUMBER - 1];
+              document.getElementById('checkin').value = d[gCol.CHECK_IN_DATE - 1];
+              let co = d[gCol.CHECK_OUT_DATE - 1];
+              const nights = parseInt(d[gCol.NUMBER_OF_NIGHTS - 1]) || 0;
+              if(!co && d[gCol.CHECK_IN_DATE - 1]){
+                const start = new Date(d[gCol.CHECK_IN_DATE - 1]);
+                if(!isNaN(start.getTime()) && nights){
+                  start.setDate(start.getDate() + nights);
+                  co = start.toISOString().slice(0,10);
+                }
+              }
+              document.getElementById('checkout').value = co || '';
             }
             function processCheckIn(){
               const idx = document.getElementById('guestSelect').value;
@@ -562,14 +572,24 @@ const GuestManager = {
       const formSheet = SheetManager.getSheet(CONFIG.SHEETS.GUEST_BOOKINGS);
       const values = formSheet.getRange(rowNumber, 1, 1, formSheet.getLastColumn()).getValues()[0];
 
-      const guestName = values[1];
-      const roomNumber = values[4];
-      const checkInDate = values[5];
-      const checkOutDate = values[6];
-      const nights = parseInt(values[7], 10) || Utils.daysBetween(new Date(checkInDate), new Date(checkOutDate));
-      const guests = values[8];
-      const purpose = values[9];
-      const requests = values[10];
+      const gCol = this.BOOKING_COL;
+
+      const guestName = values[gCol.GUEST_NAME - 1];
+      const roomNumber = values[gCol.ROOM_NUMBER - 1];
+      const checkInDate = values[gCol.CHECK_IN_DATE - 1];
+      let checkOutDate = values[gCol.CHECK_OUT_DATE - 1];
+      const nightsVal = parseInt(values[gCol.NUMBER_OF_NIGHTS - 1], 10) || 0;
+      if (!checkOutDate && checkInDate && nightsVal) {
+        const tmp = new Date(checkInDate);
+        if (!isNaN(tmp.getTime())) {
+          tmp.setDate(tmp.getDate() + nightsVal);
+          checkOutDate = tmp;
+        }
+      }
+      const nights = nightsVal || Utils.daysBetween(new Date(checkInDate), new Date(checkOutDate));
+      const guests = values[gCol.NUMBER_OF_GUESTS - 1];
+      const purpose = values[gCol.PURPOSE_OF_VISIT - 1];
+      const requests = values[gCol.SPECIAL_REQUESTS - 1];
 
       const roomRows = SheetManager.findRows(CONFIG.SHEETS.GUEST_ROOMS, this.ROOM_COL.ROOM_NUMBER, roomNumber);
       if (roomRows.length === 0) return;
