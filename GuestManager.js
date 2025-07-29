@@ -238,7 +238,16 @@ const GuestManager = {
   showProcessCheckInPanel: function() {
     try {
       const data = SheetManager.getAllData(CONFIG.SHEETS.GUEST_BOOKINGS);
-      const gCol = this.BOOKING_COL;
+      const headerMap = SheetManager.getHeaderMap(CONFIG.SHEETS.GUEST_BOOKINGS);
+      const gCol = {
+        GUEST_NAME: headerMap['Guest Name'] || this.BOOKING_COL.GUEST_NAME,
+        EMAIL: headerMap['Email'] || this.BOOKING_COL.EMAIL,
+        PHONE: headerMap['Phone'] || this.BOOKING_COL.PHONE,
+        ROOM_NUMBER: headerMap['Room Number'] || this.BOOKING_COL.ROOM_NUMBER,
+        CHECK_IN_DATE: headerMap['Check-In Date'] || this.BOOKING_COL.CHECK_IN_DATE,
+        CHECK_OUT_DATE: headerMap['Check-Out Date'] || this.BOOKING_COL.CHECK_OUT_DATE,
+        NUMBER_OF_NIGHTS: headerMap['Number of Nights'] || this.BOOKING_COL.NUMBER_OF_NIGHTS
+      };
       const options = data.map((row, i) => `<option value="${i}">${row[gCol.GUEST_NAME - 1]}</option>`).join('');
 
       const html = HtmlService.createHtmlOutput(`
@@ -260,6 +269,7 @@ const GuestManager = {
           <button onclick="processCheckIn()" style="margin-top:10px;">Process Check-In</button>
           <script>
             const data = ${JSON.stringify(data)};
+            const gCol = ${JSON.stringify(gCol)};
             function fillFields(){
               const idx = document.getElementById('guestSelect').value;
               if(idx===''){return;}
@@ -572,7 +582,17 @@ const GuestManager = {
       const formSheet = SheetManager.getSheet(CONFIG.SHEETS.GUEST_BOOKINGS);
       const values = formSheet.getRange(rowNumber, 1, 1, formSheet.getLastColumn()).getValues()[0];
 
-      const gCol = this.BOOKING_COL;
+      const headerMap = SheetManager.getHeaderMap(CONFIG.SHEETS.GUEST_BOOKINGS);
+      const gCol = {
+        GUEST_NAME: headerMap['Guest Name'] || this.BOOKING_COL.GUEST_NAME,
+        ROOM_NUMBER: headerMap['Room Number'] || this.BOOKING_COL.ROOM_NUMBER,
+        CHECK_IN_DATE: headerMap['Check-In Date'] || this.BOOKING_COL.CHECK_IN_DATE,
+        CHECK_OUT_DATE: headerMap['Check-Out Date'] || this.BOOKING_COL.CHECK_OUT_DATE,
+        NUMBER_OF_NIGHTS: headerMap['Number of Nights'] || this.BOOKING_COL.NUMBER_OF_NIGHTS,
+        NUMBER_OF_GUESTS: headerMap['Number of Guests'] || this.BOOKING_COL.NUMBER_OF_GUESTS,
+        PURPOSE_OF_VISIT: headerMap['Purpose of Visit'] || this.BOOKING_COL.PURPOSE_OF_VISIT,
+        SPECIAL_REQUESTS: headerMap['Special Requests'] || this.BOOKING_COL.SPECIAL_REQUESTS
+      };
 
       const guestName = values[gCol.GUEST_NAME - 1];
       const roomNumber = values[gCol.ROOM_NUMBER - 1];
