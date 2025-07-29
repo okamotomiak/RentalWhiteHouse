@@ -36,12 +36,12 @@ const SheetManager = {
     ],
     
     GUEST_ROOMS: [
-      'Booking ID', 'Guest Name', 'Email', 'Phone', 'Room Number', 'Room Name',
-      'Room Type', 'Max Occupancy', 'Amenities', 'Status', 'Check-In Date',
-      'Check-Out Date', 'Number of Nights', 'Number of Guests', 'Purpose of Visit',
-      'Special Requests', 'Total Amount', 'Daily Rate', 'Weekly Rate',
-      'Monthly Rate', 'Payment Status', 'Booking Status', 'Source', 'Notes',
-      'Last Cleaned', 'Maintenance Notes'
+      'Booking ID', 'Room Number', 'Room Name', 'Room Type', 'Max Occupancy',
+      'Amenities', 'Daily Rate', 'Weekly Rate', 'Monthly Rate', 'Status',
+      'Last Cleaned', 'Maintenance Notes', 'Check-In Date', 'Check-Out Date',
+      'Number of Nights', 'Number of Guests', 'Current Guest',
+      'Purpose of Visit', 'Special Requests', 'Source', 'Total Amount',
+      'Payment Status', 'Booking Status', 'Notes'
     ],
     
     GUEST_BOOKINGS: [

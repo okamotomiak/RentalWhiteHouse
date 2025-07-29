@@ -365,8 +365,14 @@ Thank you for being a valued resident!
     form.addTextItem()
       .setTitle('Phone');
 
-    form.addTextItem()
-      .setTitle('Room Number');
+    const roomItem = form.addListItem();
+    roomItem
+      .setTitle('Room Number')
+      .setChoices([
+        roomItem.createChoice('G1'),
+        roomItem.createChoice('G2')
+      ])
+      .setRequired(true);
 
     form.addDateItem()
       .setTitle('Check-In Date')

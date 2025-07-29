@@ -82,22 +82,16 @@ const DataManager = {
   createSampleGuestRooms: function() {
     const sampleGuestRooms = [
       [
-        '', '', '', '', 'G1', 'Executive Suite', 'Executive Suite', 2,
-        'Queen bed, Private bath, Mini fridge, Desk, City view', 'Available',
-        '', '', '', '', '', '', 85, 510, 1800, '', '', '', '', new Date(),
-        'Recently deep cleaned'
+        '', 'G1', 'Executive Suite', 'Executive Suite', 2,
+        'Queen bed, Private bath, Mini fridge, Desk, City view',
+        85, 510, 1800, 'Available', new Date(), 'Recently deep cleaned',
+        '', '', '', '', '', '', '', '', '', '', '', ''
       ],
       [
-        '', '', '', '', 'G2', 'Comfort Room', 'Standard Room', 2,
-        'Double bed, Shared bath, WiFi, Coffee maker', 'Available',
-        '', '', '', '', '', '', 65, 390, 1400, '', '', '', '', new Date(),
-        'Standard maintenance completed'
-      ],
-      [
-        '', '', '', '', 'G3', 'Budget Room', 'Economy Room', 1,
-        'Single bed, Shared bath, Basic amenities', 'Maintenance',
-        '', '', '', '', '', '', '', 55, 330, 1200, '', '', '', '', new Date(),
-        'Plumbing repair scheduled'
+        '', 'G2', 'Comfort Room', 'Standard Room', 2,
+        'Double bed, Shared bath, WiFi, Coffee maker',
+        65, 390, 1400, 'Available', new Date(), 'Standard maintenance completed',
+        '', '', '', '', '', '', '', '', '', '', '', ''
       ]
     ];
     
@@ -665,9 +659,9 @@ const DataManager = {
         const rowNumber = index + 2;
         
         // Check rate consistency
-        const dailyRate = room[2];
-        const weeklyRate = room[3];
-        const monthlyRate = room[4];
+        const dailyRate = room[6];
+        const weeklyRate = room[7];
+        const monthlyRate = room[8];
         
         if (weeklyRate && dailyRate && weeklyRate > dailyRate * 7) {
           issues.push(`Weekly rate higher than daily rate * 7 in guest room row ${rowNumber}`);
@@ -788,10 +782,10 @@ const DataManager = {
       // Guest room statistics
       const guestRoomData = SheetManager.getAllData(CONFIG.SHEETS.GUEST_ROOMS);
       guestRoomData.forEach(room => {
-        if (room[0]) { // Has room number
+        if (room[1]) { // Has room number
           stats.guestRooms.total++;
-          
-          const status = room[8]; // Room status column
+
+          const status = room[9]; // Room status column
           switch (status) {
             case 'Available':
               stats.guestRooms.available++;

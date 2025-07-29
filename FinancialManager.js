@@ -702,9 +702,9 @@ const FinancialManager = {
     let guestNights = 0;
     
     guestRoomData.forEach(room => {
-      if (room[0]) { // Has room number
+      if (room[1]) { // Has room number
         stats.totalGuestRooms++;
-        if (room[8] === 'Occupied') {
+        if (room[9] === 'Occupied') {
           stats.guestsOccupied++;
         }
       }

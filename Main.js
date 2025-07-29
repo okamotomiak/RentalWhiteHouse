@@ -126,7 +126,7 @@ const SettingsManager = {
       });
       
       guestRoomData.forEach(room => {
-        if (room[0]) { // Has room number
+        if (room[1]) { // Has room number
           guestRooms++;
         }
       });

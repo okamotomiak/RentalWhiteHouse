@@ -8,31 +8,29 @@ const GuestManager = {
    */
   ROOM_COL: {
     BOOKING_ID: 1,
-    GUEST_NAME: 2,
-    EMAIL: 3,
-    PHONE: 4,
-    ROOM_NUMBER: 5,
-    ROOM_NAME: 6,
-    ROOM_TYPE: 7,
-    MAX_OCCUPANCY: 8,
-    AMENITIES: 9,
+    ROOM_NUMBER: 2,
+    ROOM_NAME: 3,
+    ROOM_TYPE: 4,
+    MAX_OCCUPANCY: 5,
+    AMENITIES: 6,
+    DAILY_RATE: 7,
+    WEEKLY_RATE: 8,
+    MONTHLY_RATE: 9,
     STATUS: 10,
-    CHECK_IN_DATE: 11,
-    CHECK_OUT_DATE: 12,
-    NUMBER_OF_NIGHTS: 13,
-    NUMBER_OF_GUESTS: 14,
-    PURPOSE_OF_VISIT: 15,
-    SPECIAL_REQUESTS: 16,
-    TOTAL_AMOUNT: 17,
-    DAILY_RATE: 18,
-    WEEKLY_RATE: 19,
-    MONTHLY_RATE: 20,
-    PAYMENT_STATUS: 21,
-    BOOKING_STATUS: 22,
-    SOURCE: 23,
-    NOTES: 24,
-    LAST_CLEANED: 25,
-    MAINTENANCE_NOTES: 26
+    LAST_CLEANED: 11,
+    MAINTENANCE_NOTES: 12,
+    CHECK_IN_DATE: 13,
+    CHECK_OUT_DATE: 14,
+    NUMBER_OF_NIGHTS: 15,
+    NUMBER_OF_GUESTS: 16,
+    CURRENT_GUEST: 17,
+    PURPOSE_OF_VISIT: 18,
+    SPECIAL_REQUESTS: 19,
+    SOURCE: 20,
+    TOTAL_AMOUNT: 21,
+    PAYMENT_STATUS: 22,
+    BOOKING_STATUS: 23,
+    NOTES: 24
   },
   
   /**
@@ -545,7 +543,7 @@ const GuestManager = {
       const rowNumber = roomRows[0].rowNumber;
 
       sheet.getRange(rowNumber, this.ROOM_COL.STATUS).setValue(status);
-      sheet.getRange(rowNumber, this.ROOM_COL.GUEST_NAME).setValue(guestName || '');
+      sheet.getRange(rowNumber, this.ROOM_COL.CURRENT_GUEST).setValue(guestName || '');
       sheet.getRange(rowNumber, this.ROOM_COL.CHECK_IN_DATE).setValue(checkInDate || '');
       sheet.getRange(rowNumber, this.ROOM_COL.CHECK_OUT_DATE).setValue(checkOutDate || '');
 
@@ -565,8 +563,6 @@ const GuestManager = {
       const values = formSheet.getRange(rowNumber, 1, 1, formSheet.getLastColumn()).getValues()[0];
 
       const guestName = values[1];
-      const email = values[2];
-      const phone = values[3];
       const roomNumber = values[4];
       const checkInDate = values[5];
       const checkOutDate = values[6];
@@ -592,9 +588,7 @@ const GuestManager = {
       const bookingId = Utils.generateId('BK');
 
       roomSheet.getRange(row, this.ROOM_COL.BOOKING_ID).setValue(bookingId);
-      roomSheet.getRange(row, this.ROOM_COL.GUEST_NAME).setValue(guestName);
-      roomSheet.getRange(row, this.ROOM_COL.EMAIL).setValue(email);
-      roomSheet.getRange(row, this.ROOM_COL.PHONE).setValue(phone);
+      roomSheet.getRange(row, this.ROOM_COL.CURRENT_GUEST).setValue(guestName);
       roomSheet.getRange(row, this.ROOM_COL.STATUS).setValue('Occupied');
       roomSheet.getRange(row, this.ROOM_COL.CHECK_IN_DATE).setValue(checkInDate);
       roomSheet.getRange(row, this.ROOM_COL.CHECK_OUT_DATE).setValue(checkOutDate);
