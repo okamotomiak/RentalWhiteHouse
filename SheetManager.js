@@ -390,18 +390,18 @@ const SheetManager = {
       sheet.deleteColumn(firstIndex + 1); // Convert to 1-based index
     }
 
-    // Format rate columns (3, 4, 5)
-    sheet.getRange(2, 3, numRows, 1).setNumberFormat('$#,##0.00'); // Daily Rate
-    sheet.getRange(2, 4, numRows, 1).setNumberFormat('$#,##0.00'); // Weekly Rate
-    sheet.getRange(2, 5, numRows, 1).setNumberFormat('$#,##0.00'); // Monthly Rate
+    // Format rate columns (7, 8, 9)
+    sheet.getRange(2, 7, numRows, 1).setNumberFormat('$#,##0.00'); // Daily Rate
+    sheet.getRange(2, 8, numRows, 1).setNumberFormat('$#,##0.00'); // Weekly Rate
+    sheet.getRange(2, 9, numRows, 1).setNumberFormat('$#,##0.00'); // Monthly Rate
     
-    // Format date columns (11, 12, 13)
-    sheet.getRange(2, 11, numRows, 1).setNumberFormat('yyyy-mm-dd'); // Check-in Date
-    sheet.getRange(2, 12, numRows, 1).setNumberFormat('yyyy-mm-dd'); // Check-out Date
-    sheet.getRange(2, 13, numRows, 1).setNumberFormat('yyyy-mm-dd'); // Last Cleaned
+    // Format date columns (11, 13, 14)
+    sheet.getRange(2, 11, numRows, 1).setNumberFormat('yyyy-mm-dd'); // Last Cleaned
+    sheet.getRange(2, 13, numRows, 1).setNumberFormat('yyyy-mm-dd'); // Check-In Date
+    sheet.getRange(2, 14, numRows, 1).setNumberFormat('yyyy-mm-dd'); // Check-Out Date
     
-    // Conditional formatting for Room Status (column 9)
-    const statusRange = sheet.getRange(2, 9, numRows, 1);
+    // Conditional formatting for Room Status (column 10)
+    const statusRange = sheet.getRange(2, 10, numRows, 1);
 
     const rules = [];
 
@@ -436,7 +436,7 @@ const SheetManager = {
       .requireValueInList(['Available', 'Occupied', 'Maintenance'], true)
       .setAllowInvalid(false)
       .build();
-    sheet.getRange(2, 9, numRows, 1).setDataValidation(statusRule);
+    sheet.getRange(2, 10, numRows, 1).setDataValidation(statusRule);
 
     const paymentRule = SpreadsheetApp.newDataValidation()
       .requireValueInList([
