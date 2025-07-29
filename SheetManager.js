@@ -662,6 +662,21 @@ const SheetManager = {
   },
 
   /**
+   * Get a mapping of header names to 1-based column indexes
+   */
+  getHeaderMap: function(sheetName) {
+    const sheet = this.getSheet(sheetName);
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const map = {};
+    headers.forEach((h, i) => {
+      if (typeof h === 'string' && h.trim() !== '') {
+        map[h.trim()] = i + 1;
+      }
+    });
+    return map;
+  },
+
+  /**
    * Get unique non-empty values from a column in a sheet
    */
   getUniqueValues: function(sheetName, columnIndex) {

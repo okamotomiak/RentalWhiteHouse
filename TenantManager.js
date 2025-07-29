@@ -343,6 +343,7 @@ const TenantManager = {
       const ui = SpreadsheetApp.getUi();
 
       const applications = SheetManager.getAllData(CONFIG.SHEETS.APPLICATIONS);
+      const appHeaders = SheetManager.getHeaderMap(CONFIG.SHEETS.APPLICATIONS);
       const vacantRooms = this.getVacantRooms();
 
       if (applications.length === 0) {
@@ -355,13 +356,19 @@ const TenantManager = {
         return;
       }
 
+      const nameIdx = appHeaders['Full Name'] || this.APP_COL.FULL_NAME;
+      const emailIdx = appHeaders['Email'] || this.APP_COL.EMAIL;
+      const phoneIdx = appHeaders['Phone'] || this.APP_COL.PHONE;
+      const moveInIdx = appHeaders['Desired Move-in Date'] || this.APP_COL.MOVE_IN_DATE;
+      const roomIdx = appHeaders['Preferred Room'] || this.APP_COL.PREFERRED_ROOM;
+
       const appData = applications.map((row, i) => ({
         index: i,
-        name: row[this.APP_COL.FULL_NAME - 1],
-        email: row[this.APP_COL.EMAIL - 1],
-        phone: row[this.APP_COL.PHONE - 1],
-        moveIn: row[this.APP_COL.MOVE_IN_DATE - 1],
-        room: (row[this.APP_COL.PREFERRED_ROOM - 1] || '').replace(/Room\s*/, '')
+        name: row[nameIdx - 1],
+        email: row[emailIdx - 1],
+        phone: row[phoneIdx - 1],
+        moveIn: row[moveInIdx - 1],
+        room: (row[roomIdx - 1] || '').replace(/Room\s*/, '')
       })).filter(a => a.name);
 
       const options = appData.map((a, i) => `<option value="${i}">${a.name}</option>`).join('');
