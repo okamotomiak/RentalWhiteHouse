@@ -44,12 +44,6 @@ const SheetManager = {
       'Payment Status', 'Booking Status', 'Notes'
     ],
     
-    GUEST_BOOKINGS: [
-      'Booking ID', 'Timestamp', 'Guest Name', 'Email', 'Phone',
-      'Room Number', 'Check-In Date', 'Check-Out Date', 'Number of Nights',
-      'Number of Guests', 'Purpose of Visit', 'Special Requests', 'Total Amount',
-      'Amount Paid', 'Payment Status', 'Booking Status', 'Source', 'Notes'
-    ],
     
     MAINTENANCE: [
       'Request ID', 'Timestamp', 'Room/Area', 'Issue Type', 'Priority',
@@ -79,6 +73,7 @@ const SheetManager = {
     try {
       // Create/setup each sheet
       Object.entries(CONFIG.SHEETS).forEach(([key, sheetName]) => {
+        if (key === 'GUEST_BOOKINGS') return; // responses sheet handled separately
         this.setupSheet(ss, sheetName, this.HEADERS[key]);
       });
       
@@ -103,7 +98,6 @@ const SheetManager = {
       CONFIG.SHEETS.TENANTS,
       CONFIG.SHEETS.BUDGET,
       CONFIG.SHEETS.GUEST_ROOMS,
-      CONFIG.SHEETS.GUEST_BOOKINGS,
       CONFIG.SHEETS.MAINTENANCE,
       CONFIG.SHEETS.DOCUMENTS,
       CONFIG.SHEETS.SETTINGS
@@ -197,11 +191,6 @@ const SheetManager = {
       this.formatGuestRoomsSheet(guestRoomsSheet);
     }
     
-    // Guest Bookings sheet formatting
-    const guestBookingsSheet = spreadsheet.getSheetByName(CONFIG.SHEETS.GUEST_BOOKINGS);
-    if (guestBookingsSheet) {
-      this.formatGuestBookingsSheet(guestBookingsSheet);
-    }
     
     // Maintenance sheet formatting
     const maintenanceSheet = spreadsheet.getSheetByName(CONFIG.SHEETS.MAINTENANCE);
@@ -223,7 +212,7 @@ const SheetManager = {
     // Alternate row colors using banding for efficiency
     const existingBandings = sheet.getBandings();
     existingBandings.forEach(b => b.remove());
-    sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getLastColumn())
+    sheet.getRange(2, 1, sheet.getMaxRows() - 1, sheet.getLastColumn())
       .applyRowBanding(SpreadsheetApp.BandingTheme.LIGHT_GREY);
     
     // Conditional formatting for Room Status (column 9)
@@ -390,9 +379,17 @@ const SheetManager = {
    */
   formatGuestRoomsSheet: function(sheet) {
     if (sheet.getLastRow() < 2) return;
-    
+
     const numRows = sheet.getMaxRows() - 1;
-    
+
+    // Remove duplicate "Maintenance Notes" column if present
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const firstIndex = headers.indexOf('Maintenance Notes');
+    const lastIndex = headers.lastIndexOf('Maintenance Notes');
+    if (firstIndex !== -1 && lastIndex !== -1 && firstIndex !== lastIndex) {
+      sheet.deleteColumn(firstIndex + 1); // Convert to 1-based index
+    }
+
     // Format rate columns (3, 4, 5)
     sheet.getRange(2, 3, numRows, 1).setNumberFormat('$#,##0.00'); // Daily Rate
     sheet.getRange(2, 4, numRows, 1).setNumberFormat('$#,##0.00'); // Weekly Rate
@@ -405,9 +402,9 @@ const SheetManager = {
     
     // Conditional formatting for Room Status (column 9)
     const statusRange = sheet.getRange(2, 9, numRows, 1);
-    
+
     const rules = [];
-    
+
     // Available - Green
     rules.push(SpreadsheetApp.newConditionalFormatRule()
       .whenTextEqualTo('Available')
@@ -415,7 +412,7 @@ const SheetManager = {
       .setFontColor('#137333')
       .setRanges([statusRange])
       .build());
-    
+
     // Occupied - Red
     rules.push(SpreadsheetApp.newConditionalFormatRule()
       .whenTextEqualTo('Occupied')
@@ -423,7 +420,7 @@ const SheetManager = {
       .setFontColor('#cc0000')
       .setRanges([statusRange])
       .build());
-    
+
     // Maintenance - Orange
     rules.push(SpreadsheetApp.newConditionalFormatRule()
       .whenTextEqualTo('Maintenance')
@@ -431,72 +428,42 @@ const SheetManager = {
       .setFontColor('#b45f06')
       .setRanges([statusRange])
       .build());
-    
+
     sheet.setConditionalFormatRules(rules);
-  },
-  
-  /**
-   * Format Guest Bookings Sheet
-   */
-  formatGuestBookingsSheet: function(sheet) {
-    if (sheet.getLastRow() < 2) return;
-    
-    const numRows = sheet.getMaxRows() - 1;
-    
-    // Format date columns (7, 8)
-    sheet.getRange(2, 7, numRows, 1).setNumberFormat('yyyy-mm-dd'); // Check-in Date
-    sheet.getRange(2, 8, numRows, 1).setNumberFormat('yyyy-mm-dd'); // Check-out Date
-    
-    // Format amount columns (13, 14)
-    sheet.getRange(2, 13, numRows, 1).setNumberFormat('$#,##0.00'); // Total Amount
-    sheet.getRange(2, 14, numRows, 1).setNumberFormat('$#,##0.00'); // Amount Paid
-    
-    // Conditional formatting for Booking Status (column 16)
-    const statusRange = sheet.getRange(2, 16, numRows, 1);
-    
-    const rules = [];
-    
-    // Confirmed - Green
-    rules.push(SpreadsheetApp.newConditionalFormatRule()
-      .whenTextEqualTo(CONFIG.STATUS.BOOKING.CONFIRMED)
-      .setBackground('#d9ead3')
-      .setFontColor('#137333')
-      .setRanges([statusRange])
-      .build());
-    
-    // Pending - Yellow
-    rules.push(SpreadsheetApp.newConditionalFormatRule()
-      .whenTextEqualTo(CONFIG.STATUS.BOOKING.PENDING)
-      .setBackground('#fff2cc')
-      .setFontColor('#b45f06')
-      .setRanges([statusRange])
-      .build());
-    
-    // Checked In - Blue
-    rules.push(SpreadsheetApp.newConditionalFormatRule()
-      .whenTextEqualTo(CONFIG.STATUS.BOOKING.CHECKED_IN)
-      .setBackground('#cfe2f3')
-      .setFontColor('#1c4587')
-      .setRanges([statusRange])
-      .build());
-    
-    // Checked Out - Gray
-    rules.push(SpreadsheetApp.newConditionalFormatRule()
-      .whenTextEqualTo(CONFIG.STATUS.BOOKING.CHECKED_OUT)
-      .setBackground('#f3f3f3')
-      .setFontColor('#666666')
-      .setRanges([statusRange])
-      .build());
-    
-    // Cancelled - Red
-    rules.push(SpreadsheetApp.newConditionalFormatRule()
-      .whenTextEqualTo(CONFIG.STATUS.BOOKING.CANCELLED)
-      .setBackground('#f4cccc')
-      .setFontColor('#cc0000')
-      .setRanges([statusRange])
-      .build());
-    
-    sheet.setConditionalFormatRules(rules);
+
+    // Data validation dropdowns
+    const statusRule = SpreadsheetApp.newDataValidation()
+      .requireValueInList(['Available', 'Occupied', 'Maintenance'], true)
+      .setAllowInvalid(false)
+      .build();
+    sheet.getRange(2, 9, numRows, 1).setDataValidation(statusRule);
+
+    const paymentRule = SpreadsheetApp.newDataValidation()
+      .requireValueInList([
+        CONFIG.STATUS.PAYMENT.PAID,
+        CONFIG.STATUS.PAYMENT.DUE,
+        CONFIG.STATUS.PAYMENT.OVERDUE,
+        CONFIG.STATUS.PAYMENT.PARTIAL
+      ], true)
+      .setAllowInvalid(false)
+      .build();
+    sheet.getRange(2, 22, numRows, 1).setDataValidation(paymentRule);
+
+    const bookingRule = SpreadsheetApp.newDataValidation()
+      .requireValueInList([
+        CONFIG.STATUS.BOOKING.PENDING,
+        CONFIG.STATUS.BOOKING.CONFIRMED,
+        CONFIG.STATUS.BOOKING.CHECKED_IN,
+        CONFIG.STATUS.BOOKING.CHECKED_OUT,
+        CONFIG.STATUS.BOOKING.CANCELLED
+      ], true)
+      .setAllowInvalid(false)
+      .build();
+    sheet.getRange(2, 23, numRows, 1).setDataValidation(bookingRule);
+
+    // Additional formatting
+    sheet.getRange(2, 15, numRows, 2).setNumberFormat('0'); // Nights & Guests
+    sheet.getRange(2, 21, numRows, 1).setNumberFormat('$#,##0.00'); // Total
   },
   
   /**
