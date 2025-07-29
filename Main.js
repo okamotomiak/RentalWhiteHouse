@@ -648,7 +648,7 @@ function onOpen() {
     .addSubMenu(ui.createMenu('🛏️ Guest Room Management')
       .addItem('📅 Today\'s Arrivals & Departures', 'showTodayGuestActivity')
       .addItem('🔍 Check Room Availability', 'checkGuestRoomAvailability')
-      .addItem('✅ Process Check-In', 'processGuestCheckIn')
+      .addItem('✅ Process Check-In', 'showProcessCheckInPanel')
       .addItem('📤 Process Check-Out', 'processGuestCheckOut')
       .addItem('📊 Guest Room Analytics', 'showGuestRoomAnalytics')
       .addItem('💲 Dynamic Pricing Analysis', 'analyzeGuestRoomPricing')
@@ -1052,6 +1052,8 @@ function showTodayGuestActivity() { GuestManager.showTodayGuestActivity(); }
 function checkGuestRoomAvailability() { GuestManager.checkGuestRoomAvailability(); }
 function processGuestCheckIn() { GuestManager.processGuestCheckIn(); }
 function processGuestCheckOut() { GuestManager.processGuestCheckOut(); }
+function showProcessCheckInPanel() { GuestManager.showProcessCheckInPanel(); }
+function processCheckInFromForm(row) { GuestManager.processCheckInFromForm(row); }
 function showGuestRoomAnalytics() { GuestManager.showGuestRoomAnalytics(); }
 
 // Forms & Documents functions

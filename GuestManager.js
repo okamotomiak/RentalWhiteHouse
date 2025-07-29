@@ -7,20 +7,32 @@ const GuestManager = {
    * Column indexes for Guest Rooms sheet (1-based)
    */
   ROOM_COL: {
-    ROOM_NUMBER: 1,
-    ROOM_NAME: 2,
-    DAILY_RATE: 3,
-    WEEKLY_RATE: 4,
-    MONTHLY_RATE: 5,
-    ROOM_TYPE: 6,
-    MAX_OCCUPANCY: 7,
-    AMENITIES: 8,
-    STATUS: 9,
-    CURRENT_GUEST: 10,
+    BOOKING_ID: 1,
+    GUEST_NAME: 2,
+    EMAIL: 3,
+    PHONE: 4,
+    ROOM_NUMBER: 5,
+    ROOM_NAME: 6,
+    ROOM_TYPE: 7,
+    MAX_OCCUPANCY: 8,
+    AMENITIES: 9,
+    STATUS: 10,
     CHECK_IN_DATE: 11,
     CHECK_OUT_DATE: 12,
-    LAST_CLEANED: 13,
-    MAINTENANCE_NOTES: 14
+    NUMBER_OF_NIGHTS: 13,
+    NUMBER_OF_GUESTS: 14,
+    PURPOSE_OF_VISIT: 15,
+    SPECIAL_REQUESTS: 16,
+    TOTAL_AMOUNT: 17,
+    DAILY_RATE: 18,
+    WEEKLY_RATE: 19,
+    MONTHLY_RATE: 20,
+    PAYMENT_STATUS: 21,
+    BOOKING_STATUS: 22,
+    SOURCE: 23,
+    NOTES: 24,
+    LAST_CLEANED: 25,
+    MAINTENANCE_NOTES: 26
   },
   
   /**
@@ -219,6 +231,61 @@ const GuestManager = {
       
     } catch (error) {
       handleSystemError(error, 'checkGuestRoomAvailability');
+    }
+  },
+
+  /**
+   * Show panel to process guest check-in from form responses
+   */
+  showProcessCheckInPanel: function() {
+    try {
+      const data = SheetManager.getAllData('Guest Room Bookings');
+      const options = data.map((row, i) => `<option value="${i}">${row[1]}</option>`).join('');
+
+      const html = HtmlService.createHtmlOutput(`
+        <div style="font-family: Arial, sans-serif; padding:20px;">
+          <h3>Process Check-In</h3>
+          <label>Guest:</label>
+          <select id="guestSelect" onchange="fillFields()">
+            <option value="">Select...</option>
+            ${options}
+          </select>
+          <div style="margin-top:10px;">
+            <label>Name:</label><input type="text" id="guestName" style="width:100%" readonly><br>
+            <label>Email:</label><input type="text" id="email" style="width:100%" readonly><br>
+            <label>Phone:</label><input type="text" id="phone" style="width:100%" readonly><br>
+            <label>Room:</label><input type="text" id="room" style="width:100%" readonly><br>
+            <label>Check-In:</label><input type="text" id="checkin" style="width:100%" readonly><br>
+            <label>Check-Out:</label><input type="text" id="checkout" style="width:100%" readonly><br>
+          </div>
+          <button onclick="processCheckIn()" style="margin-top:10px;">Process Check-In</button>
+          <script>
+            const data = ${JSON.stringify(data)};
+            function fillFields(){
+              const idx = document.getElementById('guestSelect').value;
+              if(idx===''){return;}
+              const d = data[idx];
+              document.getElementById('guestName').value = d[1];
+              document.getElementById('email').value = d[2];
+              document.getElementById('phone').value = d[3];
+              document.getElementById('room').value = d[4];
+              document.getElementById('checkin').value = d[5];
+              document.getElementById('checkout').value = d[6];
+            }
+            function processCheckIn(){
+              const idx = document.getElementById('guestSelect').value;
+              if(idx==='') return;
+              google.script.run.processCheckInFromForm(Number(idx)+2);
+              google.script.host.close();
+            }
+          </script>
+        </div>
+      `).setWidth(400).setHeight(500);
+
+      SpreadsheetApp.getUi().showModalDialog(html, 'Process Check-In');
+
+    } catch (error) {
+      handleSystemError(error, 'showProcessCheckInPanel');
     }
   },
   
@@ -476,16 +543,72 @@ const GuestManager = {
     
     if (roomRows.length > 0) {
       const rowNumber = roomRows[0].rowNumber;
-      
+
       sheet.getRange(rowNumber, this.ROOM_COL.STATUS).setValue(status);
-      sheet.getRange(rowNumber, this.ROOM_COL.CURRENT_GUEST).setValue(guestName || '');
+      sheet.getRange(rowNumber, this.ROOM_COL.GUEST_NAME).setValue(guestName || '');
       sheet.getRange(rowNumber, this.ROOM_COL.CHECK_IN_DATE).setValue(checkInDate || '');
       sheet.getRange(rowNumber, this.ROOM_COL.CHECK_OUT_DATE).setValue(checkOutDate || '');
-      
+
       // Update last cleaned date when room becomes available
       if (status === 'Available') {
         sheet.getRange(rowNumber, this.ROOM_COL.LAST_CLEANED).setValue(new Date());
       }
+    }
+  },
+
+  /**
+   * Process check-in from form row
+   */
+  processCheckInFromForm: function(rowNumber) {
+    try {
+      const formSheet = SheetManager.getSheet('Guest Room Bookings');
+      const values = formSheet.getRange(rowNumber, 1, 1, formSheet.getLastColumn()).getValues()[0];
+
+      const guestName = values[1];
+      const email = values[2];
+      const phone = values[3];
+      const roomNumber = values[4];
+      const checkInDate = values[5];
+      const checkOutDate = values[6];
+      const nights = parseInt(values[7], 10) || Utils.daysBetween(new Date(checkInDate), new Date(checkOutDate));
+      const guests = values[8];
+      const purpose = values[9];
+      const requests = values[10];
+
+      const roomRows = SheetManager.findRows(CONFIG.SHEETS.GUEST_ROOMS, this.ROOM_COL.ROOM_NUMBER, roomNumber);
+      if (roomRows.length === 0) return;
+
+      const row = roomRows[0].rowNumber;
+      const roomSheet = SheetManager.getSheet(CONFIG.SHEETS.GUEST_ROOMS);
+
+      const dailyRate = roomSheet.getRange(row, this.ROOM_COL.DAILY_RATE).getValue() || 0;
+      const weeklyRate = roomSheet.getRange(row, this.ROOM_COL.WEEKLY_RATE).getValue() || 0;
+      const monthlyRate = roomSheet.getRange(row, this.ROOM_COL.MONTHLY_RATE).getValue() || 0;
+
+      let total = dailyRate * nights;
+      if (nights >= 28 && monthlyRate) total = monthlyRate;
+      else if (nights >= 7 && weeklyRate) total = weeklyRate;
+
+      const bookingId = Utils.generateId('BK');
+
+      roomSheet.getRange(row, this.ROOM_COL.BOOKING_ID).setValue(bookingId);
+      roomSheet.getRange(row, this.ROOM_COL.GUEST_NAME).setValue(guestName);
+      roomSheet.getRange(row, this.ROOM_COL.EMAIL).setValue(email);
+      roomSheet.getRange(row, this.ROOM_COL.PHONE).setValue(phone);
+      roomSheet.getRange(row, this.ROOM_COL.STATUS).setValue('Occupied');
+      roomSheet.getRange(row, this.ROOM_COL.CHECK_IN_DATE).setValue(checkInDate);
+      roomSheet.getRange(row, this.ROOM_COL.CHECK_OUT_DATE).setValue(checkOutDate);
+      roomSheet.getRange(row, this.ROOM_COL.NUMBER_OF_NIGHTS).setValue(nights);
+      roomSheet.getRange(row, this.ROOM_COL.NUMBER_OF_GUESTS).setValue(guests);
+      roomSheet.getRange(row, this.ROOM_COL.PURPOSE_OF_VISIT).setValue(purpose);
+      roomSheet.getRange(row, this.ROOM_COL.SPECIAL_REQUESTS).setValue(requests);
+      roomSheet.getRange(row, this.ROOM_COL.TOTAL_AMOUNT).setValue(total);
+      roomSheet.getRange(row, this.ROOM_COL.PAYMENT_STATUS).setValue(CONFIG.STATUS.PAYMENT.DUE);
+      roomSheet.getRange(row, this.ROOM_COL.BOOKING_STATUS).setValue(CONFIG.STATUS.BOOKING.CHECKED_IN);
+      roomSheet.getRange(row, this.ROOM_COL.SOURCE).setValue('Form');
+
+    } catch (error) {
+      handleSystemError(error, 'processCheckInFromForm');
     }
   },
   
