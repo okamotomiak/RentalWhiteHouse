@@ -1139,6 +1139,8 @@ function showTodayGuestActivity() { GuestManager.showTodayGuestActivity(); }
 function checkGuestRoomAvailability() { GuestManager.checkGuestRoomAvailability(); }
 function processGuestCheckIn() { GuestManager.processGuestCheckIn(); }
 function processGuestCheckOut() { GuestManager.showProcessCheckOutPanel(); }
+function showProcessCheckOutPanel() { GuestManager.showProcessCheckOutPanel(); }
+function showProcessCheckOutPanelDetails() { GuestManager.showProcessCheckOutPanel(); }
 function showProcessCheckInPanel() { GuestManager.showProcessCheckInPanel(); }
 function processCheckInFromForm(row) { GuestManager.processCheckInFromForm(row); }
 function showGuestRoomAnalytics() { GuestManager.showGuestRoomAnalytics(); }
