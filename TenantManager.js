@@ -591,6 +591,7 @@ const TenantManager = {
 
       const options = tenants.map((t, i) => `<option value="${i}">${t.name}</option>`).join('');
 
+      const html = HtmlService.createHtmlOutput(`
 <div class="container">
   <h3>Process Tenant Move-Out</h3>
   <form id="moveOutForm">
