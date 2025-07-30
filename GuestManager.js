@@ -162,7 +162,6 @@ const GuestManager = {
           </div>
           
           <div style="margin-top: 30px; text-align: center;">
-            <button onclick="google.script.run.checkGuestRoomAvailability()" style="margin: 5px; padding: 10px 20px;">Check Availability</button>
             <button onclick="google.script.run.showGuestRoomAnalytics()" style="margin: 5px; padding: 10px 20px;">View Analytics</button>
             <button onclick="google.script.run.showOccupancyCalendar()" style="margin: 5px; padding: 10px 20px;">Occupancy Calendar</button>
           </div>
@@ -178,60 +177,6 @@ const GuestManager = {
     }
   },
   
-  /**
-   * Check guest room availability for a date range
-   */
-  checkGuestRoomAvailability: function() {
-    try {
-      const ui = SpreadsheetApp.getUi();
-      
-      const checkInResponse = ui.prompt(
-        'Check Guest Room Availability',
-        'Enter check-in date (MM/DD/YYYY):',
-        ui.ButtonSet.OK_CANCEL
-      );
-      
-      if (checkInResponse.getSelectedButton() !== ui.Button.OK) return;
-      
-      const checkOutResponse = ui.prompt(
-        'Check Guest Room Availability',
-        'Enter check-out date (MM/DD/YYYY):',
-        ui.ButtonSet.OK_CANCEL
-      );
-      
-      if (checkOutResponse.getSelectedButton() !== ui.Button.OK) return;
-      
-      const checkIn = new Date(checkInResponse.getResponseText());
-      const checkOut = new Date(checkOutResponse.getResponseText());
-      
-      if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime()) || checkOut <= checkIn) {
-        ui.alert('Invalid dates entered. Please ensure check-out is after check-in.');
-        return;
-      }
-      
-      const availableRooms = this.getAvailableGuestRooms(checkIn, checkOut);
-      const numberOfNights = Utils.daysBetween(checkIn, checkOut);
-      
-      if (availableRooms.length === 0) {
-        ui.alert('No Rooms Available', 'No guest rooms are available for the selected dates.', ui.ButtonSet.OK);
-      } else {
-        const roomList = availableRooms.map(room => {
-          const totalCost = this.calculateDynamicPrice(room, checkIn, checkOut, numberOfNights);
-          return `${room.name} (${room.number}) - ${Utils.formatCurrency(room.dailyRate)}/night - Total: ${Utils.formatCurrency(totalCost)}`;
-        }).join('\n');
-        
-        ui.alert(
-          'Available Rooms',
-          `Available rooms for ${Utils.formatDate(checkIn, 'MM/dd/yyyy')} to ${Utils.formatDate(checkOut, 'MM/dd/yyyy')} (${numberOfNights} nights):\n\n${roomList}`,
-          ui.ButtonSet.OK
-        );
-      }
-      
-    } catch (error) {
-      handleSystemError(error, 'checkGuestRoomAvailability');
-    }
-  },
-
   /**
    * Show panel to process guest check-in from form responses
    */
@@ -252,13 +197,13 @@ const GuestManager = {
 
       const html = HtmlService.createHtmlOutput(`
         <div style="font-family: Arial, sans-serif; padding:20px;">
-          <h3>Process Check-In</h3>
+          <h3 style="margin-top:0;">Process Check-In</h3>
           <label>Guest:</label>
-          <select id="guestSelect" onchange="fillFields()">
+          <select id="guestSelect" onchange="fillFields()" style="width:100%;padding:4px;">
             <option value="">Select...</option>
             ${options}
           </select>
-          <div style="margin-top:10px;">
+          <div id="details" style="margin-top:10px;display:none;">
             <label>Name:</label><input type="text" id="guestName" style="width:100%" readonly><br>
             <label>Email:</label><input type="text" id="email" style="width:100%" readonly><br>
             <label>Phone:</label><input type="text" id="phone" style="width:100%" readonly><br>
@@ -266,13 +211,15 @@ const GuestManager = {
             <label>Check-In:</label><input type="text" id="checkin" style="width:100%" readonly><br>
             <label>Check-Out:</label><input type="text" id="checkout" style="width:100%" readonly><br>
           </div>
-          <button onclick="processCheckIn()" style="margin-top:10px;">Process Check-In</button>
+          <button id="processBtn" style="margin-top:15px;" disabled>Process Check-In</button>
           <script>
             const data = ${JSON.stringify(data)};
             const gCol = ${JSON.stringify(gCol)};
             function fillFields(){
               const idx = document.getElementById('guestSelect').value;
-              if(idx===''){return;}
+              const details = document.getElementById('details');
+              const btn = document.getElementById('processBtn');
+              if(idx===''){ details.style.display='none'; btn.disabled=true; return; }
               const d = data[idx];
               document.getElementById('guestName').value = d[gCol.GUEST_NAME - 1];
               document.getElementById('email').value = d[gCol.EMAIL - 1];
@@ -289,16 +236,20 @@ const GuestManager = {
                 }
               }
               document.getElementById('checkout').value = co || '';
+              details.style.display='block';
+              btn.disabled=false;
             }
-            function processCheckIn(){
+            document.getElementById('processBtn').addEventListener('click', function(){
               const idx = document.getElementById('guestSelect').value;
               if(idx==='') return;
-              google.script.run.processCheckInFromForm(Number(idx)+2);
-              google.script.host.close();
-            }
+              if(confirm('Check in selected guest?')){
+                google.script.run.processCheckInFromForm(Number(idx)+2);
+                google.script.host.close();
+              }
+            });
           </script>
         </div>
-      `).setWidth(400).setHeight(500);
+      `).setWidth(420).setHeight(520);
 
       SpreadsheetApp.getUi().showModalDialog(html, 'Process Check-In');
 
@@ -677,37 +628,43 @@ const GuestManager = {
 
       const html = HtmlService.createHtmlOutput(`
         <div style="font-family: Arial, sans-serif; padding:20px;">
-          <h3>Process Check-Out</h3>
+          <h3 style="margin-top:0;">Process Check-Out</h3>
           <label>Guest:</label>
-          <select id="guestSelect" onchange="fillFields()">
+          <select id="guestSelect" onchange="fillFields()" style="width:100%;padding:4px;">
             <option value="">Select...</option>
             ${options}
           </select>
-          <div style="margin-top:10px;">
+          <div id="details" style="margin-top:10px;display:none;">
             <label>Room:</label><input type="text" id="room" style="width:100%" readonly><br>
             <label>Check-In:</label><input type="text" id="checkin" style="width:100%" readonly><br>
             <label>Check-Out:</label><input type="text" id="checkout" style="width:100%" readonly><br>
           </div>
-          <button onclick="processCO()" style="margin-top:10px;">Process Check-Out</button>
+          <button id="processBtn" style="margin-top:15px;" disabled>Process Check-Out</button>
           <script>
             const data = ${JSON.stringify(occupied)};
             function fillFields(){
               const val = document.getElementById('guestSelect').value;
+              const details = document.getElementById('details');
+              const btn = document.getElementById('processBtn');
               const rec = data.find(r => r.row == val);
-              if(!rec){return;}
+              if(!rec){ details.style.display='none'; btn.disabled=true; return; }
               document.getElementById('room').value = rec.room;
               document.getElementById('checkin').value = rec.checkIn;
               document.getElementById('checkout').value = rec.checkOut;
+              details.style.display='block';
+              btn.disabled=false;
             }
-            function processCO(){
+            document.getElementById('processBtn').addEventListener('click', function(){
               const val = document.getElementById('guestSelect').value;
               if(val=='') return;
-              google.script.run.processRoomCheckOut(Number(val));
-              google.script.host.close();
-            }
+              if(confirm('Check out selected guest?')){
+                google.script.run.processRoomCheckOut(Number(val));
+                google.script.host.close();
+              }
+            });
           </script>
         </div>
-      `).setWidth(400).setHeight(400);
+      `).setWidth(420).setHeight(460);
 
       SpreadsheetApp.getUi().showModalDialog(html, 'Process Check-Out');
 
@@ -746,75 +703,115 @@ const GuestManager = {
     try {
       const bookingData = SheetManager.getAllData(CONFIG.SHEETS.GUEST_BOOKINGS);
       const roomData = SheetManager.getAllData(CONFIG.SHEETS.GUEST_ROOMS);
-      
+
       const analytics = this.calculateGuestAnalytics(bookingData, roomData);
-      
+
       const html = HtmlService.createHtmlOutput(`
         <div style="font-family: Arial, sans-serif; padding: 20px;">
-          <h2>📊 Guest Room Analytics</h2>
-          
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
-            <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; text-align: center;">
-              <h3 style="margin: 0; color: #1976d2;">Total Bookings</h3>
-              <p style="font-size: 24px; margin: 5px 0; font-weight: bold;">${analytics.totalBookings}</p>
-              <small>This month</small>
-            </div>
-            <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; text-align: center;">
-              <h3 style="margin: 0; color: #388e3c;">Occupancy Rate</h3>
-              <p style="font-size: 24px; margin: 5px 0; font-weight: bold;">${analytics.occupancyRate}%</p>
-              <small>This month</small>
-            </div>
-            <div style="background: #fff3e0; padding: 15px; border-radius: 8px; text-align: center;">
-              <h3 style="margin: 0; color: #f57c00;">Avg Daily Rate</h3>
-              <p style="font-size: 24px; margin: 5px 0; font-weight: bold;">${Utils.formatCurrency(analytics.avgDailyRate)}</p>
-              <small>This month</small>
-            </div>
+          <div style="display:flex; border-bottom:1px solid #ccc; margin-bottom:20px;">
+            <div id="tabAnalytics" onclick="switchView('analytics')" style="cursor:pointer; padding:8px 16px; border-bottom:3px solid #1976d2; font-weight:bold;">Analytics</div>
+            <div id="tabPricing" onclick="switchView('pricing')" style="cursor:pointer; padding:8px 16px;">Dynamic Pricing</div>
           </div>
-          
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
-            <div>
-              <h3>💰 Revenue Analysis</h3>
-              <div style="background: #f5f5f5; padding: 15px; border-radius: 8px;">
-                <p><strong>This Month:</strong> ${Utils.formatCurrency(analytics.monthlyRevenue)}</p>
-                <p><strong>YTD Revenue:</strong> ${Utils.formatCurrency(analytics.ytdRevenue)}</p>
-                <p><strong>Average Booking Value:</strong> ${Utils.formatCurrency(analytics.avgBookingValue)}</p>
-                <p><strong>Revenue per Available Room:</strong> ${Utils.formatCurrency(analytics.revPAR)}</p>
+
+          <div id="analyticsView">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+              <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; text-align: center;">
+                <h3 style="margin: 0; color: #1976d2;">Total Bookings</h3>
+                <p style="font-size: 24px; margin: 5px 0; font-weight: bold;">${analytics.totalBookings}</p>
+                <small>This month</small>
+              </div>
+              <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; text-align: center;">
+                <h3 style="margin: 0; color: #388e3c;">Occupancy Rate</h3>
+                <p style="font-size: 24px; margin: 5px 0; font-weight: bold;">${analytics.occupancyRate}%</p>
+                <small>This month</small>
+              </div>
+              <div style="background: #fff3e0; padding: 15px; border-radius: 8px; text-align: center;">
+                <h3 style="margin: 0; color: #f57c00;">Avg Daily Rate</h3>
+                <p style="font-size: 24px; margin: 5px 0; font-weight: bold;">${Utils.formatCurrency(analytics.avgDailyRate)}</p>
+                <small>This month</small>
               </div>
             </div>
-            
-            <div>
-              <h3>📈 Booking Patterns</h3>
-              <div style="background: #f5f5f5; padding: 15px; border-radius: 8px;">
-                <p><strong>Average Stay:</strong> ${analytics.avgStayLength} nights</p>
-                <p><strong>Weekend vs Weekday:</strong></p>
-                <ul style="margin: 5px 0;">
-                  <li>Weekend Bookings: ${analytics.weekendBookings}%</li>
-                  <li>Weekday Bookings: ${analytics.weekdayBookings}%</li>
-                </ul>
-                <p><strong>Top Purpose:</strong> ${analytics.topPurpose}</p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+              <div>
+                <h3>💰 Revenue Analysis</h3>
+                <div style="background: #f5f5f5; padding: 15px; border-radius: 8px;">
+                  <p><strong>This Month:</strong> ${Utils.formatCurrency(analytics.monthlyRevenue)}</p>
+                  <p><strong>YTD Revenue:</strong> ${Utils.formatCurrency(analytics.ytdRevenue)}</p>
+                  <p><strong>Average Booking Value:</strong> ${Utils.formatCurrency(analytics.avgBookingValue)}</p>
+                  <p><strong>Revenue per Available Room:</strong> ${Utils.formatCurrency(analytics.revPAR)}</p>
+                </div>
+              </div>
+
+              <div>
+                <h3>📈 Booking Patterns</h3>
+                <div style="background: #f5f5f5; padding: 15px; border-radius: 8px;">
+                  <p><strong>Average Stay:</strong> ${analytics.avgStayLength} nights</p>
+                  <p><strong>Weekend vs Weekday:</strong></p>
+                  <ul style="margin: 5px 0;">
+                    <li>Weekend Bookings: ${analytics.weekendBookings}%</li>
+                    <li>Weekday Bookings: ${analytics.weekdayBookings}%</li>
+                  </ul>
+                  <p><strong>Top Purpose:</strong> ${analytics.topPurpose}</p>
+                </div>
               </div>
             </div>
+
+            <h3>🏠 Room Performance</h3>
+            <div style="background: #f5f5f5; padding: 15px; border-radius: 8px;">
+              ${analytics.roomPerformance.map(room => `
+                <div style="margin-bottom: 10px; padding: 10px; background: white; border-radius: 5px;">
+                  <strong>${room.name}</strong> (${room.number})<br>
+                  Bookings: ${room.bookings} | Revenue: ${Utils.formatCurrency(room.revenue)} | Occupancy: ${room.occupancy}%
+                </div>
+              `).join('')}
+            </div>
           </div>
-          
-          <h3>🏠 Room Performance</h3>
-          <div style="background: #f5f5f5; padding: 15px; border-radius: 8px;">
-            ${analytics.roomPerformance.map(room => `
-              <div style="margin-bottom: 10px; padding: 10px; background: white; border-radius: 5px;">
-                <strong>${room.name}</strong> (${room.number})<br>
-                Bookings: ${room.bookings} | Revenue: ${Utils.formatCurrency(room.revenue)} | Occupancy: ${room.occupancy}%
-              </div>
-            `).join('')}
-          </div>
-          
-          <div style="margin-top: 30px; text-align: center;">
-            <button onclick="google.script.run.analyzeGuestRoomPricing()" style="margin: 5px; padding: 10px 20px;">Pricing Analysis</button>
-            <button onclick="google.script.run.generateGuestRoomReport()" style="margin: 5px; padding: 10px 20px;">Generate Report</button>
+
+          <div id="pricingView" style="display:none;">
+            <h3>💲 Guest Room Pricing Analysis</h3>
+            <div style="background:#f5f5f5;padding:15px;border-radius:8px;">
+              <p><strong>Base Rate:</strong> $75/night</p>
+              <p><strong>Weekend Premium:</strong> +25%</p>
+              <p><strong>Weekly Discount:</strong> -10%</p>
+              <p><strong>Monthly Discount:</strong> -20%</p>
+            </div>
+
+            <h4 style="margin-top:20px;">📊 Market Analysis</h4>
+            <div style="background:#e3f2fd;padding:15px;border-radius:8px;">
+              <p><strong>Competitive Position:</strong> Mid-range</p>
+              <p><strong>Occupancy Rate:</strong> ${analytics.occupancyRate}%</p>
+              <p><strong>Revenue per Available Room:</strong> ${Utils.formatCurrency(analytics.revPAR)}/night</p>
+            </div>
+
+            <h4 style="margin-top:20px;">💡 Recommendations</h4>
+            <ul style="background:#e8f5e8;padding:20px;border-radius:8px;">
+              <li>Consider increasing base rate during high demand periods</li>
+              <li>Implement seasonal pricing for summer months</li>
+              <li>Add last-minute booking discounts for same-day reservations</li>
+              <li>Create package deals for extended stays</li>
+            </ul>
           </div>
         </div>
+
+        <style>
+          #tabAnalytics.active, #tabPricing.active {
+            border-bottom:3px solid #1976d2;
+            font-weight:bold;
+          }
+        </style>
+        <script>
+          function switchView(view) {
+            document.getElementById('analyticsView').style.display = view === 'analytics' ? 'block' : 'none';
+            document.getElementById('pricingView').style.display = view === 'pricing' ? 'block' : 'none';
+            document.getElementById('tabAnalytics').classList.toggle('active', view === 'analytics');
+            document.getElementById('tabPricing').classList.toggle('active', view === 'pricing');
+          }
+        </script>
       `)
         .setWidth(800)
         .setHeight(700);
-      
+
       SpreadsheetApp.getUi().showModalDialog(html, 'Guest Room Analytics');
       
     } catch (error) {
