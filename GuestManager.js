@@ -708,6 +708,8 @@ const GuestManager = {
 
       const html = HtmlService.createHtmlOutput(`
         <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2>📊 Guest Room Analytics</h2>
+
           <div style="display:flex; border-bottom:1px solid #ccc; margin-bottom:20px;">
             <div id="tabAnalytics" onclick="switchView('analytics')" style="cursor:pointer; padding:8px 16px; border-bottom:3px solid #1976d2; font-weight:bold;">Analytics</div>
             <div id="tabPricing" onclick="switchView('pricing')" style="cursor:pointer; padding:8px 16px;">Dynamic Pricing</div>
