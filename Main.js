@@ -226,10 +226,10 @@ const DocumentManager = {
       ['Rent Due', Utils.formatCurrency(data.rent)],
       ['Due Date', data.dueDate]
     ]);
-    table.getRow(0).getCell(0).setBackground('#f5f5f5');
-    table.getRow(1).getCell(0).setBackground('#f5f5f5');
-    table.getRow(2).getCell(0).setBackground('#f5f5f5');
-    table.getRow(3).getCell(0).setBackground('#f5f5f5');
+    table.getRow(0).getCell(0).setBackgroundColor('#f5f5f5');
+    table.getRow(1).getCell(0).setBackgroundColor('#f5f5f5');
+    table.getRow(2).getCell(0).setBackgroundColor('#f5f5f5');
+    table.getRow(3).getCell(0).setBackgroundColor('#f5f5f5');
 
     if (data.email) body.appendParagraph(`Email: ${data.email}`);
     if (data.phone) body.appendParagraph(`Phone: ${data.phone}`);
