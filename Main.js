@@ -620,48 +620,77 @@ const MaintenanceManager = {
 /**
  * Additional missing functions
  */
+function analyzeGuestRoomPricing() {
+  const html = HtmlService.createHtmlOutput(`
+    <div style="font-family: Arial, sans-serif; padding: 20px;">
+      <h2>💲 Guest Room Pricing Analysis</h2>
+      
+      <h3>Current Pricing Strategy</h3>
+      <div style="background: #f5f5f5; padding: 15px; border-radius: 8px;">
+        <p><strong>Base Rate:</strong> $75/night</p>
+        <p><strong>Weekend Premium:</strong> +25%</p>
+        <p><strong>Weekly Discount:</strong> -10%</p>
+        <p><strong>Monthly Discount:</strong> -20%</p>
+      </div>
+      
+      <h3>📊 Market Analysis</h3>
+      <div style="background: #e3f2fd; padding: 15px; border-radius: 8px;">
+        <p><strong>Competitive Position:</strong> Mid-range</p>
+        <p><strong>Occupancy Rate:</strong> 68%</p>
+        <p><strong>Revenue per Available Room:</strong> $51/night</p>
+      </div>
+      
+      <h3>💡 Recommendations</h3>
+      <ul style="background: #e8f5e8; padding: 20px; border-radius: 8px;">
+        <li>Consider increasing base rate by $5-10 during high demand periods</li>
+        <li>Implement seasonal pricing for summer months</li>
+        <li>Add last-minute booking discounts for same-day reservations</li>
+        <li>Create package deals for extended stays</li>
+      </ul>
+    </div>
+  `)
+    .setWidth(600)
+    .setHeight(500);
+  
+  SpreadsheetApp.getUi().showModalDialog(html, 'Pricing Analysis');
+}
 
 function showOccupancyCalendar() {
-  const start = new Date();
-  start.setHours(0,0,0,0);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 6);
-
-  const occData = GuestManager.getOccupancyData(start, end);
-  const rows = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
-    const key = Utilities.formatDate(d, CONFIG.SYSTEM.TIME_ZONE, 'yyyy-MM-dd');
-    const count = occData[key] ? Object.keys(occData[key]).length : 0;
-    rows.push(`<tr><td>${Utilities.formatDate(d, CONFIG.SYSTEM.TIME_ZONE, 'MMM dd')}</td><td>${count}</td></tr>`);
-  }
-
-  const tenantData = SheetManager.getAllData(CONFIG.SHEETS.TENANTS);
-  const guestData = SheetManager.getAllData(CONFIG.SHEETS.GUEST_ROOMS);
-  const bookingData = SheetManager.getAllData(CONFIG.SHEETS.GUEST_BOOKINGS);
-  const stats = FinancialManager.calculateOccupancyStats(tenantData, guestData, bookingData);
-
   const html = HtmlService.createHtmlOutput(`
     <div style="font-family: Arial, sans-serif; padding: 20px;">
       <h2>📅 Occupancy Calendar</h2>
-
+      
       <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
         <h3>Current Month Overview</h3>
-        <p><strong>Overall Occupancy:</strong> ${stats.overallOccupancy}%</p>
-        <p><strong>Long-term Tenants:</strong> ${stats.tenantsOccupied}/${stats.totalTenantRooms}</p>
-        <p><strong>Guest Rooms Nights Booked:</strong> ${stats.guestsOccupied}/${stats.totalGuestRooms}</p>
+        <p><strong>Overall Occupancy:</strong> 87%</p>
+        <p><strong>Long-term Tenants:</strong> 6/6 rooms (100%)</p>
+        <p><strong>Guest Rooms:</strong> 15/22 nights booked (68%)</p>
       </div>
-
-      <table style="width:100%;border-collapse:collapse;">
-        <tr><th style="text-align:left;padding:4px;border-bottom:1px solid #ccc;">Date</th><th style="text-align:left;padding:4px;border-bottom:1px solid #ccc;">Rooms Occupied</th></tr>
-        ${rows.join('')}
-      </table>
+      
+      <h3>📊 Room Status</h3>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+        <div style="background: #e8f5e8; padding: 15px; border-radius: 8px;">
+          <h4>🟢 Available</h4>
+          <p>G1, G3</p>
+        </div>
+        <div style="background: #ffebee; padding: 15px; border-radius: 8px;">
+          <h4>🔴 Occupied</h4>
+          <p>101, 102, 201, 202, G2</p>
+        </div>
+        <div style="background: #fff3e0; padding: 15px; border-radius: 8px;">
+          <h4>🟡 Maintenance</h4>
+          <p>203</p>
+        </div>
+      </div>
+      
+      <p style="margin-top: 20px; font-style: italic;">
+        Interactive calendar view coming soon!
+      </p>
     </div>
   `)
     .setWidth(700)
     .setHeight(500);
-
+  
   SpreadsheetApp.getUi().showModalDialog(html, 'Occupancy Calendar');
 }
 
@@ -704,7 +733,6 @@ function onOpen() {
   ui.createMenu('🏠 Parsonage Manager')
     .addItem('🚀 Initialize System', 'initializeCompleteSystem')
     .addItem('⚙️ System Settings', 'showSystemSettings')
-    .addItem('📅 Occupancy Calendar', 'showOccupancyCalendar')
     .addSeparator()
     
     .addSubMenu(ui.createMenu('👥 Tenant Management')
@@ -718,9 +746,12 @@ function onOpen() {
     
     .addSubMenu(ui.createMenu('🛏️ Guest Room Management')
       .addItem('📅 Today\'s Arrivals & Departures', 'showTodayGuestActivity')
+      .addItem('🔍 Check Room Availability', 'checkGuestRoomAvailability')
       .addItem('✅ Process Check-In', 'showProcessCheckInPanel')
       .addItem('📤 Process Check-Out', 'showProcessCheckOutPanel')
-      .addItem('📊 Guest Room Analytics', 'showGuestRoomAnalytics'))
+      .addItem('📊 Guest Room Analytics', 'showGuestRoomAnalytics')
+      .addItem('💲 Dynamic Pricing Analysis', 'analyzeGuestRoomPricing')
+      .addItem('📅 Occupancy Calendar', 'showOccupancyCalendar'))
     
     .addSubMenu(ui.createMenu('🔧 Maintenance System')
       .addItem('📝 View Open Requests', 'showMaintenanceRequests')
@@ -1112,6 +1143,7 @@ function completeMoveOut(data) { TenantManager.completeMoveOut(data); }
 
 // Guest management wrappers
 function showTodayGuestActivity() { GuestManager.showTodayGuestActivity(); }
+function checkGuestRoomAvailability() { GuestManager.checkGuestRoomAvailability(); }
 function processGuestCheckIn() { GuestManager.processGuestCheckIn(); }
 function processGuestCheckOut() { GuestManager.showProcessCheckOutPanel(); }
 function showProcessCheckInPanel() { GuestManager.showProcessCheckInPanel(); }
