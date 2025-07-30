@@ -162,6 +162,7 @@ const GuestManager = {
           </div>
           
           <div style="margin-top: 30px; text-align: center;">
+            <button onclick="google.script.run.checkGuestRoomAvailability()" style="margin: 5px; padding: 10px 20px;">Check Availability</button>
             <button onclick="google.script.run.showGuestRoomAnalytics()" style="margin: 5px; padding: 10px 20px;">View Analytics</button>
             <button onclick="google.script.run.showOccupancyCalendar()" style="margin: 5px; padding: 10px 20px;">Occupancy Calendar</button>
           </div>
@@ -177,6 +178,60 @@ const GuestManager = {
     }
   },
   
+  /**
+   * Check guest room availability for a date range
+   */
+  checkGuestRoomAvailability: function() {
+    try {
+      const ui = SpreadsheetApp.getUi();
+      
+      const checkInResponse = ui.prompt(
+        'Check Guest Room Availability',
+        'Enter check-in date (MM/DD/YYYY):',
+        ui.ButtonSet.OK_CANCEL
+      );
+      
+      if (checkInResponse.getSelectedButton() !== ui.Button.OK) return;
+      
+      const checkOutResponse = ui.prompt(
+        'Check Guest Room Availability',
+        'Enter check-out date (MM/DD/YYYY):',
+        ui.ButtonSet.OK_CANCEL
+      );
+      
+      if (checkOutResponse.getSelectedButton() !== ui.Button.OK) return;
+      
+      const checkIn = new Date(checkInResponse.getResponseText());
+      const checkOut = new Date(checkOutResponse.getResponseText());
+      
+      if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime()) || checkOut <= checkIn) {
+        ui.alert('Invalid dates entered. Please ensure check-out is after check-in.');
+        return;
+      }
+      
+      const availableRooms = this.getAvailableGuestRooms(checkIn, checkOut);
+      const numberOfNights = Utils.daysBetween(checkIn, checkOut);
+      
+      if (availableRooms.length === 0) {
+        ui.alert('No Rooms Available', 'No guest rooms are available for the selected dates.', ui.ButtonSet.OK);
+      } else {
+        const roomList = availableRooms.map(room => {
+          const totalCost = this.calculateDynamicPrice(room, checkIn, checkOut, numberOfNights);
+          return `${room.name} (${room.number}) - ${Utils.formatCurrency(room.dailyRate)}/night - Total: ${Utils.formatCurrency(totalCost)}`;
+        }).join('\n');
+        
+        ui.alert(
+          'Available Rooms',
+          `Available rooms for ${Utils.formatDate(checkIn, 'MM/dd/yyyy')} to ${Utils.formatDate(checkOut, 'MM/dd/yyyy')} (${numberOfNights} nights):\n\n${roomList}`,
+          ui.ButtonSet.OK
+        );
+      }
+      
+    } catch (error) {
+      handleSystemError(error, 'checkGuestRoomAvailability');
+    }
+  },
+
   /**
    * Show panel to process guest check-in from form responses
    */
@@ -197,13 +252,13 @@ const GuestManager = {
 
       const html = HtmlService.createHtmlOutput(`
         <div style="font-family: Arial, sans-serif; padding:20px;">
-          <h3 style="margin-top:0;">Process Check-In</h3>
+          <h3>Process Check-In</h3>
           <label>Guest:</label>
-          <select id="guestSelect" onchange="fillFields()" style="width:100%;padding:4px;">
+          <select id="guestSelect" onchange="fillFields()">
             <option value="">Select...</option>
             ${options}
           </select>
-          <div id="details" style="margin-top:10px;display:none;">
+          <div style="margin-top:10px;">
             <label>Name:</label><input type="text" id="guestName" style="width:100%" readonly><br>
             <label>Email:</label><input type="text" id="email" style="width:100%" readonly><br>
             <label>Phone:</label><input type="text" id="phone" style="width:100%" readonly><br>
@@ -211,15 +266,13 @@ const GuestManager = {
             <label>Check-In:</label><input type="text" id="checkin" style="width:100%" readonly><br>
             <label>Check-Out:</label><input type="text" id="checkout" style="width:100%" readonly><br>
           </div>
-          <button id="processBtn" style="margin-top:15px;" disabled>Process Check-In</button>
+          <button onclick="processCheckIn()" style="margin-top:10px;">Process Check-In</button>
           <script>
             const data = ${JSON.stringify(data)};
             const gCol = ${JSON.stringify(gCol)};
             function fillFields(){
               const idx = document.getElementById('guestSelect').value;
-              const details = document.getElementById('details');
-              const btn = document.getElementById('processBtn');
-              if(idx===''){ details.style.display='none'; btn.disabled=true; return; }
+              if(idx===''){return;}
               const d = data[idx];
               document.getElementById('guestName').value = d[gCol.GUEST_NAME - 1];
               document.getElementById('email').value = d[gCol.EMAIL - 1];
@@ -236,20 +289,16 @@ const GuestManager = {
                 }
               }
               document.getElementById('checkout').value = co || '';
-              details.style.display='block';
-              btn.disabled=false;
             }
-            document.getElementById('processBtn').addEventListener('click', function(){
+            function processCheckIn(){
               const idx = document.getElementById('guestSelect').value;
               if(idx==='') return;
-              if(confirm('Check in selected guest?')){
-                google.script.run.processCheckInFromForm(Number(idx)+2);
-                google.script.host.close();
-              }
-            });
+              google.script.run.processCheckInFromForm(Number(idx)+2);
+              google.script.host.close();
+            }
           </script>
         </div>
-      `).setWidth(420).setHeight(520);
+      `).setWidth(400).setHeight(500);
 
       SpreadsheetApp.getUi().showModalDialog(html, 'Process Check-In');
 
@@ -628,43 +677,37 @@ const GuestManager = {
 
       const html = HtmlService.createHtmlOutput(`
         <div style="font-family: Arial, sans-serif; padding:20px;">
-          <h3 style="margin-top:0;">Process Check-Out</h3>
+          <h3>Process Check-Out</h3>
           <label>Guest:</label>
-          <select id="guestSelect" onchange="fillFields()" style="width:100%;padding:4px;">
+          <select id="guestSelect" onchange="fillFields()">
             <option value="">Select...</option>
             ${options}
           </select>
-          <div id="details" style="margin-top:10px;display:none;">
+          <div style="margin-top:10px;">
             <label>Room:</label><input type="text" id="room" style="width:100%" readonly><br>
             <label>Check-In:</label><input type="text" id="checkin" style="width:100%" readonly><br>
             <label>Check-Out:</label><input type="text" id="checkout" style="width:100%" readonly><br>
           </div>
-          <button id="processBtn" style="margin-top:15px;" disabled>Process Check-Out</button>
+          <button onclick="processCO()" style="margin-top:10px;">Process Check-Out</button>
           <script>
             const data = ${JSON.stringify(occupied)};
             function fillFields(){
               const val = document.getElementById('guestSelect').value;
-              const details = document.getElementById('details');
-              const btn = document.getElementById('processBtn');
               const rec = data.find(r => r.row == val);
-              if(!rec){ details.style.display='none'; btn.disabled=true; return; }
+              if(!rec){return;}
               document.getElementById('room').value = rec.room;
               document.getElementById('checkin').value = rec.checkIn;
               document.getElementById('checkout').value = rec.checkOut;
-              details.style.display='block';
-              btn.disabled=false;
             }
-            document.getElementById('processBtn').addEventListener('click', function(){
+            function processCO(){
               const val = document.getElementById('guestSelect').value;
               if(val=='') return;
-              if(confirm('Check out selected guest?')){
-                google.script.run.processRoomCheckOut(Number(val));
-                google.script.host.close();
-              }
-            });
+              google.script.run.processRoomCheckOut(Number(val));
+              google.script.host.close();
+            }
           </script>
         </div>
-      `).setWidth(420).setHeight(460);
+      `).setWidth(400).setHeight(400);
 
       SpreadsheetApp.getUi().showModalDialog(html, 'Process Check-Out');
 
@@ -763,28 +806,10 @@ const GuestManager = {
             `).join('')}
           </div>
           
-          <h3 style="margin-top:30px;">💲 Pricing Strategy</h3>
-          <div style="background:#f5f5f5;padding:15px;border-radius:8px;">
-            <p><strong>Base Rate:</strong> $75/night</p>
-            <p><strong>Weekend Premium:</strong> +25%</p>
-            <p><strong>Weekly Discount:</strong> -10%</p>
-            <p><strong>Monthly Discount:</strong> -20%</p>
+          <div style="margin-top: 30px; text-align: center;">
+            <button onclick="google.script.run.analyzeGuestRoomPricing()" style="margin: 5px; padding: 10px 20px;">Pricing Analysis</button>
+            <button onclick="google.script.run.generateGuestRoomReport()" style="margin: 5px; padding: 10px 20px;">Generate Report</button>
           </div>
-
-          <h4 style="margin-top:20px;">📊 Market Analysis</h4>
-          <div style="background:#e3f2fd;padding:15px;border-radius:8px;">
-            <p><strong>Competitive Position:</strong> Mid-range</p>
-            <p><strong>Occupancy Rate:</strong> ${analytics.occupancyRate}%</p>
-            <p><strong>Revenue per Available Room:</strong> ${Utils.formatCurrency(analytics.revPAR)}/night</p>
-          </div>
-
-          <h4 style="margin-top:20px;">💡 Recommendations</h4>
-          <ul style="background:#e8f5e8;padding:20px;border-radius:8px;">
-            <li>Consider increasing base rate during high demand periods</li>
-            <li>Implement seasonal pricing for summer months</li>
-            <li>Add last-minute booking discounts for same-day reservations</li>
-            <li>Create package deals for extended stays</li>
-          </ul>
         </div>
       `)
         .setWidth(800)

@@ -648,6 +648,7 @@ const FinancialManager = {
           
           <div style="text-align: center; margin-top: 20px;">
             <button onclick="google.script.run.showProfitabilityDashboard()" style="margin: 5px; padding: 10px 20px;">Profitability Analysis</button>
+            <button onclick="google.script.run.analyzeGuestRoomPricing()" style="margin: 5px; padding: 10px 20px;">Pricing Strategy</button>
           </div>
         </div>
       `)
