@@ -289,44 +289,51 @@ const TenantManager = {
       }
 
       const html = HtmlService.createHtmlOutput(`
-        <div style="font-family: Arial, sans-serif; padding:20px;">
-          <h3 style="margin-top:0;">Record Rent Payment</h3>
-          <form id="payForm">
-            <label>Tenant:</label><br>
-            <select id="row" name="row" onchange="fillAmount()" required style="width:100%; margin-bottom:10px;">
-              <option value="">Select Tenant</option>
-              ${options}
-            </select>
-            <label>Payment Date:</label><br>
-            <input type="date" id="date" name="date" required value="${Utils.formatDate(new Date(), 'yyyy-MM-dd')}" style="width:100%; margin-bottom:10px;">
-            <label>Amount:</label><br>
-            <input type="number" id="amount" name="amount" step="0.01" required style="width:100%; margin-bottom:10px;">
-            <label>Method:</label><br>
-            <select id="method" name="method" style="width:100%; margin-bottom:20px;">
-              <option value="Cash">Cash</option>
-              <option value="Check">Check</option>
-              <option value="Online">Online</option>
-            </select>
-            <div style="text-align:right;">
-              <button type="button" onclick="submitForm()">Record</button>
-              <button type="button" onclick="google.script.host.close()">Cancel</button>
-            </div>
-          </form>
-          <script>
-            const tenants = ${JSON.stringify(tenantsData)};
-            function fillAmount(){
-              const idx = document.getElementById('row').selectedIndex - 1;
-              if(idx >= 0) document.getElementById('amount').value = tenants[idx].rent;
-            }
-            function submitForm(){
-              const form = document.getElementById('payForm');
-              if(!form.checkValidity()){ form.reportValidity(); return; }
-              google.script.run
-                .withSuccessHandler(function(){google.script.host.close();})
-                .withFailureHandler(function(e){alert(e.message);})
-                .recordTenantPayment(form.row.value, form.date.value, form.amount.value, form.method.value);
-            }
-          </script>
+<div class="container">
+  <h3>Record Rent Payment</h3>
+  <form id="payForm">
+    <label>Tenant</label>
+    <select id="row" name="row" onchange="fillAmount()" required>
+      <option value="">Select Tenant</option>
+      ${options}
+    </select>
+    <label>Payment Date</label>
+    <input type="date" id="date" name="date" required value="${Utils.formatDate(new Date(), 'yyyy-MM-dd')}">
+    <label>Amount</label>
+    <input type="number" id="amount" name="amount" step="0.01" min="0" required>
+    <label>Method</label>
+    <select id="method" name="method" required>
+      <option value="Cash">Cash</option>
+      <option value="Check">Check</option>
+      <option value="Online">Online</option>
+    </select>
+    <div style="text-align:right;margin-top:15px;">
+      <button type="button" onclick="submitForm()">Record</button>
+      <button type="button" onclick="google.script.host.close()">Cancel</button>
+    </div>
+  </form>
+</div>
+<style>
+  .container{font-family:Arial,sans-serif;width:320px;padding:20px;}
+  label{display:block;margin-top:10px;font-weight:bold;}
+  input,select,textarea{width:100%;box-sizing:border-box;padding:6px;border:1px solid #ccc;border-radius:4px;}
+  button{margin-left:5px;padding:6px 12px;}
+</style>
+<script>
+  const tenants = ${JSON.stringify(tenantsData)};
+  function fillAmount(){
+    const idx = document.getElementById('row').selectedIndex - 1;
+    if(idx >= 0) document.getElementById('amount').value = tenants[idx].rent;
+  }
+  function submitForm(){
+    const form = document.getElementById('payForm');
+    if(!form.checkValidity()){ form.reportValidity(); return; }
+    google.script.run
+      .withSuccessHandler(function(){google.script.host.close();})
+      .withFailureHandler(function(e){alert(e.message);})
+      .recordTenantPayment(form.row.value, form.date.value, form.amount.value, form.method.value);
+  }
+</script>
         </div>
       `).setWidth(350).setHeight(420);
 
@@ -408,102 +415,80 @@ const TenantManager = {
       ).join('');
 
       const html = HtmlService.createHtmlOutput(`
-        <div style="font-family: Arial, sans-serif; padding: 20px;">
-          <h3>Process Tenant Move-In</h3>
-          <label>Applicant:</label>
-          <select id="appSelect" onchange="fillApp()" style="width:100%">
-            <option value="">Select Applicant</option>
-            ${options}
-          </select>
-          <form id="moveInForm">
-            <table style="margin-top:10px;">
-              <tr>
-                <td><label>Room Number:</label></td>
-                <td>
-                  <select id="roomNumber" name="roomNumber" required>
-                    <option value="">Select Room</option>
-                    ${roomOptions}
-                  </select>
-                </td>
-              </tr>
-              <tr>
-                <td><label>Tenant Name:</label></td>
-                <td><input type="text" id="tenantName" name="tenantName" required style="width:200px;"></td>
-              </tr>
-              <tr>
-                <td><label>Email:</label></td>
-                <td><input type="email" id="email" name="email" required style="width:200px;"></td>
-              </tr>
-              <tr>
-                <td><label>Phone:</label></td>
-                <td><input type="tel" id="phone" name="phone" required style="width:200px;"></td>
-              </tr>
-              <tr>
-                <td><label>Move-in Date:</label></td>
-                <td><input type="date" id="moveInDate" name="moveInDate" required></td>
-              </tr>
-              <tr>
-                <td><label>Security Deposit:</label></td>
-                <td><input type="number" name="securityDeposit" step="0.01" required style="width:100px;"></td>
-              </tr>
-              <tr>
-                <td><label>Negotiated Rent:</label></td>
-                <td><input type="number" name="negotiatedRent" step="0.01" style="width:100px;"> (optional)</td>
-              </tr>
-              <tr>
-                <td><label>Emergency Contact:</label></td>
-                <td><input type="text" name="emergencyContact" style="width:300px;"></td>
-              </tr>
-              <tr>
-                <td><label>Lease End Date:</label></td>
-                <td><input type="date" name="leaseEndDate"></td>
-              </tr>
-              <tr>
-                <td><label>Notes:</label></td>
-                <td><textarea name="notes" rows="3" style="width:300px;"></textarea></td>
-              </tr>
-            </table>
-            <br>
-            <button type="button" onclick="processMoveIn()">Process Move-In</button>
-            <button type="button" onclick="google.script.host.close()">Cancel</button>
-          </form>
-        </div>
-
-        <script>
-          const apps = ${JSON.stringify(appData)};
-          function fillApp(){
-            const idx = document.getElementById('appSelect').value;
-            if(idx===''){return;}
-            const a = apps[idx];
-            document.getElementById('tenantName').value = a.name || '';
-            document.getElementById('email').value = a.email || '';
-            document.getElementById('phone').value = a.phone || '';
-            if(a.moveIn){
-              try{
-                const d = new Date(a.moveIn);
-                document.getElementById('moveInDate').value = d.toISOString().slice(0,10);
-              }catch(e){}
-            }
-            const roomSel = document.getElementById('roomNumber');
-            for(let i=0;i<roomSel.options.length;i++){
-              if(roomSel.options[i].value==a.room){roomSel.selectedIndex=i;break;}
-            }
-          }
-          function processMoveIn() {
-            const form = document.getElementById('moveInForm');
-            if(!form.checkValidity()){ form.reportValidity(); return; }
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData);
-            google.script.run
-              .withSuccessHandler(function() {
-                google.script.host.close();
-              })
-              .withFailureHandler(function(error) {
-                alert('Error: ' + error.message);
-              })
-              .completeMoveIn(data);
-          }
-        </script>
+<div class="container">
+  <h3>Process Tenant Move-In</h3>
+  <label>Applicant</label>
+  <select id="appSelect" onchange="fillApp()" required>
+    <option value="">Select Applicant</option>
+    ${options}
+  </select>
+  <form id="moveInForm">
+    <label>Room Number</label>
+    <select id="roomNumber" name="roomNumber" required>
+      <option value="">Select Room</option>
+      ${roomOptions}
+    </select>
+    <label>Tenant Name</label>
+    <input type="text" id="tenantName" name="tenantName" required>
+    <label>Email</label>
+    <input type="email" id="email" name="email" required>
+    <label>Phone</label>
+    <input type="tel" id="phone" name="phone" required>
+    <label>Move-in Date</label>
+    <input type="date" id="moveInDate" name="moveInDate" required>
+    <label>Security Deposit</label>
+    <input type="number" name="securityDeposit" step="0.01" min="0" required>
+    <label>Negotiated Rent (optional)</label>
+    <input type="number" name="negotiatedRent" step="0.01" min="0">
+    <label>Emergency Contact</label>
+    <input type="text" name="emergencyContact">
+    <label>Lease End Date</label>
+    <input type="date" name="leaseEndDate">
+    <label>Notes</label>
+    <textarea name="notes" rows="3"></textarea>
+    <div style="text-align:right;margin-top:15px;">
+      <button type="button" onclick="processMoveIn()">Process</button>
+      <button type="button" onclick="google.script.host.close()">Cancel</button>
+    </div>
+  </form>
+</div>
+<style>
+  .container{font-family:Arial,sans-serif;width:420px;padding:20px;}
+  label{display:block;margin-top:10px;font-weight:bold;}
+  input,select,textarea{width:100%;box-sizing:border-box;padding:6px;border:1px solid #ccc;border-radius:4px;}
+  button{margin-left:5px;padding:6px 12px;}
+</style>
+<script>
+  const apps = ${JSON.stringify(appData)};
+  function fillApp(){
+    const idx = document.getElementById('appSelect').value;
+    if(idx===''){return;}
+    const a = apps[idx];
+    document.getElementById('tenantName').value = a.name || '';
+    document.getElementById('email').value = a.email || '';
+    document.getElementById('phone').value = a.phone || '';
+    if(a.moveIn){
+      try{
+        const d = new Date(a.moveIn);
+        document.getElementById('moveInDate').value = d.toISOString().slice(0,10);
+      }catch(e){}
+    }
+    const roomSel = document.getElementById('roomNumber');
+    for(let i=0;i<roomSel.options.length;i++){
+      if(roomSel.options[i].value==a.room){roomSel.selectedIndex=i;break;}
+    }
+  }
+  function processMoveIn() {
+    const form = document.getElementById('moveInForm');
+    if(!form.checkValidity()){ form.reportValidity(); return; }
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    google.script.run
+      .withSuccessHandler(function() { google.script.host.close(); })
+      .withFailureHandler(function(error) { alert('Error: ' + error.message); })
+      .completeMoveIn(data);
+  }
+</script>
       `)
         .setWidth(500)
         .setHeight(650);
@@ -606,37 +591,42 @@ const TenantManager = {
 
       const options = tenants.map((t, i) => `<option value="${i}">${t.name}</option>`).join('');
 
-      const html = HtmlService.createHtmlOutput(`
-        <div style="font-family: Arial, sans-serif; padding:20px;">
-          <h3 style="margin-top:0;">Process Tenant Move-Out</h3>
-          <form id="moveOutForm">
-            <label>Tenant:</label><br>
-            <select id="tenantSelect" name="tenant" required style="width:100%; margin-bottom:10px;">
-              <option value="">Select...</option>
-              ${options}
-            </select>
-            <label>Move-Out Date:</label><br>
-            <input type="date" id="moveOutDate" name="date" required value="${Utils.formatDate(new Date(), 'yyyy-MM-dd')}" style="width:100%; margin-bottom:20px;">
-            <div style="text-align:right;">
-              <button type="button" onclick="submitMoveOut()">Confirm Move-Out</button>
-              <button type="button" onclick="google.script.host.close()">Cancel</button>
-            </div>
-          </form>
-          <script>
-            const tenants = ${JSON.stringify(tenants)};
-            function submitMoveOut(){
-              const form = document.getElementById('moveOutForm');
-              if(!form.checkValidity()){ form.reportValidity(); return; }
-              const idx = document.getElementById('tenantSelect').value;
-              const d = document.getElementById('moveOutDate').value;
-              const t = tenants[idx];
-              google.script.run
-                .withSuccessHandler(function(){ google.script.host.close(); })
-                .withFailureHandler(function(e){ alert('Error: '+e.message); })
-                .simpleMoveOut({ rowNumber: t.rowNumber, moveOutDate: d });
-            }
-          </script>
-        </div>
+<div class="container">
+  <h3>Process Tenant Move-Out</h3>
+  <form id="moveOutForm">
+    <label>Tenant</label>
+    <select id="tenantSelect" name="tenant" required>
+      <option value="">Select...</option>
+      ${options}
+    </select>
+    <label>Move-Out Date</label>
+    <input type="date" id="moveOutDate" name="date" required value="${Utils.formatDate(new Date(), 'yyyy-MM-dd')}">
+    <div style="text-align:right;margin-top:15px;">
+      <button type="button" onclick="submitMoveOut()">Confirm</button>
+      <button type="button" onclick="google.script.host.close()">Cancel</button>
+    </div>
+  </form>
+</div>
+<style>
+  .container{font-family:Arial,sans-serif;width:360px;padding:20px;}
+  label{display:block;margin-top:10px;font-weight:bold;}
+  input,select{width:100%;box-sizing:border-box;padding:6px;border:1px solid #ccc;border-radius:4px;}
+  button{margin-left:5px;padding:6px 12px;}
+</style>
+<script>
+  const tenants = ${JSON.stringify(tenants)};
+  function submitMoveOut(){
+    const form = document.getElementById('moveOutForm');
+    if(!form.checkValidity()){ form.reportValidity(); return; }
+    const idx = document.getElementById('tenantSelect').value;
+    const d = document.getElementById('moveOutDate').value;
+    const t = tenants[idx];
+    google.script.run
+      .withSuccessHandler(function(){ google.script.host.close(); })
+      .withFailureHandler(function(e){ alert('Error: '+e.message); })
+      .simpleMoveOut({ rowNumber: t.rowNumber, moveOutDate: d });
+  }
+</script>
       `).setWidth(400).setHeight(260);
 
       ui.showModalDialog(html, 'Process Move-Out');
