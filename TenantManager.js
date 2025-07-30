@@ -269,12 +269,19 @@ const TenantManager = {
       const ui = SpreadsheetApp.getUi();
       const tenants = SheetManager.getAllData(CONFIG.SHEETS.TENANTS);
 
-      const options = tenants.map((row, i) => {
+      const tenantsData = tenants.map((row, i) => {
         if (row[this.COL.ROOM_STATUS - 1] === CONFIG.STATUS.ROOM.OCCUPIED && row[this.COL.TENANT_NAME - 1]) {
-          return `<option value="${i + 2}">${row[this.COL.TENANT_NAME - 1]} (Room ${row[this.COL.ROOM_NUMBER - 1]})</option>`;
+          return {
+            row: i + 2,
+            name: row[this.COL.TENANT_NAME - 1],
+            room: row[this.COL.ROOM_NUMBER - 1],
+            rent: row[this.COL.NEGOTIATED_PRICE - 1] || row[this.COL.RENTAL_PRICE - 1]
+          };
         }
-        return '';
-      }).join('');
+        return null;
+      }).filter(t => t);
+
+      const options = tenantsData.map(t => `<option value="${t.row}">${t.name} (Room ${t.room})</option>`).join('');
 
       if (!options) {
         ui.alert('No occupied tenants found.');
@@ -282,23 +289,46 @@ const TenantManager = {
       }
 
       const html = HtmlService.createHtmlOutput(`
-        <div style="font-family: Arial, sans-serif; padding: 20px;">
-          <h3>Record Rent Payment</h3>
-          <label>Tenant:</label>
-          <select id="row">${options}</select><br><br>
-          <label>Payment Date:</label>
-          <input type="date" id="date" value="${Utils.formatDate(new Date(), 'yyyy-MM-dd')}"><br><br>
-          <button onclick="submitForm()">Record</button>
+        <div style="font-family: Arial, sans-serif; padding:20px;">
+          <h3 style="margin-top:0;">Record Rent Payment</h3>
+          <form id="payForm">
+            <label>Tenant:</label><br>
+            <select id="row" name="row" onchange="fillAmount()" required style="width:100%; margin-bottom:10px;">
+              <option value="">Select Tenant</option>
+              ${options}
+            </select>
+            <label>Payment Date:</label><br>
+            <input type="date" id="date" name="date" required value="${Utils.formatDate(new Date(), 'yyyy-MM-dd')}" style="width:100%; margin-bottom:10px;">
+            <label>Amount:</label><br>
+            <input type="number" id="amount" name="amount" step="0.01" required style="width:100%; margin-bottom:10px;">
+            <label>Method:</label><br>
+            <select id="method" name="method" style="width:100%; margin-bottom:20px;">
+              <option value="Cash">Cash</option>
+              <option value="Check">Check</option>
+              <option value="Online">Online</option>
+            </select>
+            <div style="text-align:right;">
+              <button type="button" onclick="submitForm()">Record</button>
+              <button type="button" onclick="google.script.host.close()">Cancel</button>
+            </div>
+          </form>
           <script>
+            const tenants = ${JSON.stringify(tenantsData)};
+            function fillAmount(){
+              const idx = document.getElementById('row').selectedIndex - 1;
+              if(idx >= 0) document.getElementById('amount').value = tenants[idx].rent;
+            }
             function submitForm(){
+              const form = document.getElementById('payForm');
+              if(!form.checkValidity()){ form.reportValidity(); return; }
               google.script.run
                 .withSuccessHandler(function(){google.script.host.close();})
                 .withFailureHandler(function(e){alert(e.message);})
-                .recordTenantPayment(document.getElementById('row').value, document.getElementById('date').value);
+                .recordTenantPayment(form.row.value, form.date.value, form.amount.value, form.method.value);
             }
           </script>
         </div>
-      `).setWidth(300).setHeight(230);
+      `).setWidth(350).setHeight(420);
 
       ui.showModalDialog(html, 'Record Payment');
 
@@ -307,11 +337,12 @@ const TenantManager = {
     }
   },
 
-  recordTenantPayment: function(rowNumber, dateStr) {
+  recordTenantPayment: function(rowNumber, dateStr, amount, method) {
     try {
       const sheet = SheetManager.getSheet(CONFIG.SHEETS.TENANTS);
       const row = parseInt(rowNumber);
-      const rent = sheet.getRange(row, this.COL.NEGOTIATED_PRICE).getValue() || sheet.getRange(row, this.COL.RENTAL_PRICE).getValue();
+      const defaultRent = sheet.getRange(row, this.COL.NEGOTIATED_PRICE).getValue() || sheet.getRange(row, this.COL.RENTAL_PRICE).getValue();
+      const rent = parseFloat(amount) || defaultRent;
 
       sheet.getRange(row, this.COL.LAST_PAYMENT).setValue(new Date(dateStr));
       sheet.getRange(row, this.COL.PAYMENT_STATUS).setValue(CONFIG.STATUS.PAYMENT.PAID);
@@ -322,7 +353,7 @@ const TenantManager = {
       FinancialManager.logPayment({
         date: new Date(dateStr),
         type: 'Rent Income',
-        description: `Rent payment from ${tenantName} - Room ${roomNumber}`,
+        description: `Rent payment from ${tenantName} - Room ${roomNumber} (${method})`,
         amount: rent,
         category: 'Rent',
         tenant: tenantName,
@@ -460,6 +491,7 @@ const TenantManager = {
           }
           function processMoveIn() {
             const form = document.getElementById('moveInForm');
+            if(!form.checkValidity()){ form.reportValidity(); return; }
             const formData = new FormData(form);
             const data = Object.fromEntries(formData);
             google.script.run
@@ -576,23 +608,26 @@ const TenantManager = {
 
       const html = HtmlService.createHtmlOutput(`
         <div style="font-family: Arial, sans-serif; padding:20px;">
-          <h3>Process Tenant Move-Out</h3>
-          <label>Tenant:</label>
-          <select id="tenantSelect" style="width:100%">
-            <option value="">Select...</option>
-            ${options}
-          </select>
-          <div style="margin-top:10px;">
-            <label>Move-Out Date:</label>
-            <input type="date" id="moveOutDate" value="${Utils.formatDate(new Date(), 'yyyy-MM-dd')}">
-          </div>
-          <button style="margin-top:10px;" onclick="submitMoveOut()">Confirm Move-Out</button>
-          <button style="margin-top:10px;" onclick="google.script.host.close()">Cancel</button>
+          <h3 style="margin-top:0;">Process Tenant Move-Out</h3>
+          <form id="moveOutForm">
+            <label>Tenant:</label><br>
+            <select id="tenantSelect" name="tenant" required style="width:100%; margin-bottom:10px;">
+              <option value="">Select...</option>
+              ${options}
+            </select>
+            <label>Move-Out Date:</label><br>
+            <input type="date" id="moveOutDate" name="date" required value="${Utils.formatDate(new Date(), 'yyyy-MM-dd')}" style="width:100%; margin-bottom:20px;">
+            <div style="text-align:right;">
+              <button type="button" onclick="submitMoveOut()">Confirm Move-Out</button>
+              <button type="button" onclick="google.script.host.close()">Cancel</button>
+            </div>
+          </form>
           <script>
             const tenants = ${JSON.stringify(tenants)};
             function submitMoveOut(){
+              const form = document.getElementById('moveOutForm');
+              if(!form.checkValidity()){ form.reportValidity(); return; }
               const idx = document.getElementById('tenantSelect').value;
-              if(idx===''){ alert('Please select a tenant'); return; }
               const d = document.getElementById('moveOutDate').value;
               const t = tenants[idx];
               google.script.run
@@ -602,7 +637,7 @@ const TenantManager = {
             }
           </script>
         </div>
-      `).setWidth(400).setHeight(250);
+      `).setWidth(400).setHeight(260);
 
       ui.showModalDialog(html, 'Process Move-Out');
 
@@ -779,17 +814,11 @@ const TenantManager = {
           ${stats.overdueList.length > 0 ? `
             <h3>⚠️ Overdue Tenants</h3>
             <div style="background: #ffebee; padding: 15px; border-radius: 8px;">
-              ${stats.overdueList.map(tenant => 
+              ${stats.overdueList.map(tenant =>
                 `<p>• <strong>${tenant.name}</strong> (Room ${tenant.room}) - Last payment: ${tenant.lastPayment}</p>`
               ).join('')}
             </div>
           ` : ''}
-          
-          <div style="margin-top: 30px; text-align: center;">
-            <button onclick="google.script.run.checkAllPaymentStatus()" style="margin: 5px; padding: 10px 20px;">Update Payment Status</button>
-            <button onclick="google.script.run.sendRentReminders()" style="margin: 5px; padding: 10px 20px;">Send Rent Reminders</button>
-            ${stats.overdueCount > 0 ? '<button onclick="google.script.run.sendLatePaymentAlerts()" style="margin: 5px; padding: 10px 20px; background: #f44336; color: white;">Send Overdue Alerts</button>' : ''}
-          </div>
         </div>
       `)
         .setWidth(800)

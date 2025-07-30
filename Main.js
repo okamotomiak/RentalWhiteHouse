@@ -219,12 +219,21 @@ const DocumentManager = {
 
     body.appendParagraph('Belvedere White House Rental').setHeading(DocumentApp.ParagraphHeading.HEADING1);
     body.appendParagraph(`Invoice for ${data.tenantName}`).setHeading(DocumentApp.ParagraphHeading.HEADING2);
-    body.appendParagraph(`Room: ${data.roomNumber}`);
+
+    const table = body.appendTable([
+      ['Room', data.roomNumber],
+      ['Period', data.monthYear],
+      ['Rent Due', Utils.formatCurrency(data.rent)],
+      ['Due Date', data.dueDate]
+    ]);
+    table.getRow(0).getCell(0).setBackground('#f5f5f5');
+    table.getRow(1).getCell(0).setBackground('#f5f5f5');
+    table.getRow(2).getCell(0).setBackground('#f5f5f5');
+    table.getRow(3).getCell(0).setBackground('#f5f5f5');
+
     if (data.email) body.appendParagraph(`Email: ${data.email}`);
     if (data.phone) body.appendParagraph(`Phone: ${data.phone}`);
-    body.appendParagraph(`Period: ${data.monthYear}`);
-    body.appendParagraph(`Rent Due: ${Utils.formatCurrency(data.rent)}`);
-    body.appendParagraph(`Due Date: ${data.dueDate}`);
+
     body.appendParagraph('Thank you for your prompt payment.');
 
     doc.saveAndClose();
@@ -728,7 +737,6 @@ function onOpen() {
     
     .addSubMenu(ui.createMenu('👥 Tenant Management')
       .addItem('📋 View Tenant Dashboard', 'showTenantDashboard')
-      .addItem('💰 Check All Payment Status', 'checkAllPaymentStatus')
       .addItem('📧 Send Rent Reminders', 'sendRentReminders')
       .addItem('⚠️ Send Late Payment Alerts', 'sendLatePaymentAlerts')
       .addItem('📄 Send Monthly Invoices', 'sendMonthlyInvoices')
@@ -885,7 +893,6 @@ function showHelpDocumentation() {
       
       <h3>📋 Daily Operations</h3>
       <ul>
-        <li><strong>Check Payments:</strong> Use "Check All Payment Status" daily</li>
         <li><strong>Guest Management:</strong> Monitor arrivals/departures</li>
         <li><strong>Maintenance:</strong> Review and assign maintenance requests</li>
       </ul>
