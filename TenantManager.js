@@ -455,10 +455,12 @@ const TenantManager = {
   </form>
 </div>
 <style>
-  .container{font-family:Arial,sans-serif;width:420px;padding:20px;}
-  label{display:block;margin-top:10px;font-weight:bold;}
-  input,select,textarea{width:100%;box-sizing:border-box;padding:6px;border:1px solid #ccc;border-radius:4px;}
-  button{margin-left:5px;padding:6px 12px;}
+  .container{font-family:Arial,sans-serif;width:420px;padding:20px;background:#f9f9f9;border-radius:8px;}
+  h3{margin-top:0;background-color:#4f7c5a;color:white;padding:10px;border-radius:4px;text-align:center;}
+  label{display:block;margin-top:10px;font-weight:bold;color:#4f7c5a;}
+  input,select,textarea{width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:4px;margin-top:4px;}
+  button{margin-left:5px;padding:6px 12px;background:#4f7c5a;color:white;border:none;border-radius:4px;cursor:pointer;}
+  button:hover{background:#436a4d;}
 </style>
 <script>
   const apps = ${JSON.stringify(appData)};
@@ -611,10 +613,12 @@ const TenantManager = {
   </form>
 </div>
 <style>
-  .container{font-family:Arial,sans-serif;width:360px;padding:20px;}
-  label{display:block;margin-top:10px;font-weight:bold;}
-  input,select{width:100%;box-sizing:border-box;padding:6px;border:1px solid #ccc;border-radius:4px;}
-  button{margin-left:5px;padding:6px 12px;}
+  .container{font-family:Arial,sans-serif;width:360px;padding:20px;background:#f9f9f9;border-radius:8px;}
+  h3{margin-top:0;background-color:#4f7c5a;color:white;padding:10px;border-radius:4px;text-align:center;}
+  label{display:block;margin-top:10px;font-weight:bold;color:#4f7c5a;}
+  input,select{width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:4px;margin-top:4px;}
+  button{margin-left:5px;padding:6px 12px;background:#4f7c5a;color:white;border:none;border-radius:4px;cursor:pointer;}
+  button:hover{background:#436a4d;}
 </style>
 <script>
   const tenants = ${JSON.stringify(tenants)};
