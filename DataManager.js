@@ -71,9 +71,7 @@ const DataManager = {
     // Clear existing data and add sample data
     SheetManager.clearSheetData(CONFIG.SHEETS.TENANTS);
     
-    sampleTenants.forEach(tenant => {
-      SheetManager.addRow(CONFIG.SHEETS.TENANTS, tenant);
-    });
+    SheetManager.addRows(CONFIG.SHEETS.TENANTS, sampleTenants);
   },
   
   /**
@@ -97,9 +95,7 @@ const DataManager = {
     
     SheetManager.clearSheetData(CONFIG.SHEETS.GUEST_ROOMS);
     
-    sampleGuestRooms.forEach(room => {
-      SheetManager.addRow(CONFIG.SHEETS.GUEST_ROOMS, room);
-    });
+    SheetManager.addRows(CONFIG.SHEETS.GUEST_ROOMS, sampleGuestRooms);
   },
   
   /**
@@ -172,9 +168,7 @@ const DataManager = {
     
     SheetManager.clearSheetData(CONFIG.SHEETS.BUDGET);
     
-    sampleBudgetEntries.forEach(entry => {
-      SheetManager.addRow(CONFIG.SHEETS.BUDGET, entry);
-    });
+    SheetManager.addRows(CONFIG.SHEETS.BUDGET, sampleBudgetEntries);
   },
   
   /**
@@ -211,9 +205,7 @@ const DataManager = {
     
     SheetManager.clearSheetData(CONFIG.SHEETS.GUEST_BOOKINGS);
     
-    sampleBookings.forEach(booking => {
-      SheetManager.addRow(CONFIG.SHEETS.GUEST_BOOKINGS, booking);
-    });
+    SheetManager.addRows(CONFIG.SHEETS.GUEST_BOOKINGS, sampleBookings);
   },
   
   /**
@@ -255,9 +247,7 @@ const DataManager = {
     
     SheetManager.clearSheetData(CONFIG.SHEETS.MAINTENANCE);
     
-    sampleMaintenance.forEach(request => {
-      SheetManager.addRow(CONFIG.SHEETS.MAINTENANCE, request);
-    });
+    SheetManager.addRows(CONFIG.SHEETS.MAINTENANCE, sampleMaintenance);
   },
   
   /**
@@ -296,9 +286,7 @@ const DataManager = {
     
     SheetManager.clearSheetData(CONFIG.SHEETS.APPLICATIONS);
     
-    sampleApplications.forEach(application => {
-      SheetManager.addRow(CONFIG.SHEETS.APPLICATIONS, application);
-    });
+    SheetManager.addRows(CONFIG.SHEETS.APPLICATIONS, sampleApplications);
   },
   
   /**
@@ -326,9 +314,7 @@ const DataManager = {
     
     SheetManager.clearSheetData(CONFIG.SHEETS.MOVEOUTS);
     
-    sampleMoveOuts.forEach(moveOut => {
-      SheetManager.addRow(CONFIG.SHEETS.MOVEOUTS, moveOut);
-    });
+    SheetManager.addRows(CONFIG.SHEETS.MOVEOUTS, sampleMoveOuts);
   },
   
   /**
@@ -365,9 +351,7 @@ const DataManager = {
     
     SheetManager.clearSheetData(CONFIG.SHEETS.DOCUMENTS);
     
-    sampleDocuments.forEach(doc => {
-      SheetManager.addRow(CONFIG.SHEETS.DOCUMENTS, doc);
-    });
+    SheetManager.addRows(CONFIG.SHEETS.DOCUMENTS, sampleDocuments);
   },
   
   /**
@@ -394,9 +378,7 @@ const DataManager = {
     
     SheetManager.clearSheetData(CONFIG.SHEETS.SETTINGS);
     
-    sampleSettings.forEach(setting => {
-      SheetManager.addRow(CONFIG.SHEETS.SETTINGS, setting);
-    });
+    SheetManager.addRows(CONFIG.SHEETS.SETTINGS, sampleSettings);
   },
   
   /**
@@ -515,9 +497,7 @@ const DataManager = {
             
             // Import data (skip headers as they're already set)
             const dataRows = sheetData.slice(1);
-            dataRows.forEach(row => {
-              SheetManager.addRow(sheetName, row);
-            });
+            SheetManager.addRows(sheetName, dataRows);
             
             importedSheets++;
           }
