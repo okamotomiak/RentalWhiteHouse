@@ -204,12 +204,12 @@ const GuestManager = {
             ${options}
           </select>
           <div id="details">
-            <label>Name:</label><input type="text" id="guestName" readonly><br>
-            <label>Email:</label><input type="text" id="email" readonly><br>
-            <label>Phone:</label><input type="text" id="phone" readonly><br>
-            <label>Room:</label><input type="text" id="room" readonly><br>
-            <label>Check-In:</label><input type="text" id="checkin" readonly><br>
-            <label>Check-Out:</label><input type="text" id="checkout" readonly><br>
+            <label>Name:</label><input type="text" id="guestName"><br>
+            <label>Email:</label><input type="text" id="email"><br>
+            <label>Phone:</label><input type="text" id="phone"><br>
+            <label>Room:</label><input type="text" id="room"><br>
+            <label>Check-In:</label><input type="text" id="checkin"><br>
+            <label>Check-Out:</label><input type="text" id="checkout"><br>
           </div>
           <button id="processBtn" disabled>Process Check-In</button>
           <style>
@@ -251,7 +251,15 @@ const GuestManager = {
               const idx = document.getElementById('guestSelect').value;
               if(idx==='') return;
               if(confirm('Check in selected guest?')){
-                google.script.run.processCheckInFromForm(Number(idx)+2);
+                const dataObj = {
+                  guestName: document.getElementById('guestName').value,
+                  email: document.getElementById('email').value,
+                  phone: document.getElementById('phone').value,
+                  roomNumber: document.getElementById('room').value,
+                  checkInDate: document.getElementById('checkin').value,
+                  checkOutDate: document.getElementById('checkout').value
+                };
+                google.script.run.processCheckInFromForm(Number(idx)+2, dataObj);
                 google.script.host.close();
               }
             });
@@ -536,7 +544,7 @@ const GuestManager = {
   /**
    * Process check-in from form row
    */
-  processCheckInFromForm: function(rowNumber) {
+  processCheckInFromForm: function(rowNumber, overrides) {
     try {
       const formSheet = SheetManager.getSheet(CONFIG.SHEETS.GUEST_BOOKINGS);
       const values = formSheet.getRange(rowNumber, 1, 1, formSheet.getLastColumn()).getValues()[0];
@@ -553,10 +561,21 @@ const GuestManager = {
         SPECIAL_REQUESTS: headerMap['Special Requests'] || this.BOOKING_COL.SPECIAL_REQUESTS
       };
 
-      const guestName = values[gCol.GUEST_NAME - 1];
-      const roomNumber = values[gCol.ROOM_NUMBER - 1];
-      const checkInDate = values[gCol.CHECK_IN_DATE - 1];
-      let checkOutDate = values[gCol.CHECK_OUT_DATE - 1];
+      overrides = overrides || {};
+
+      const guestName = overrides.guestName || values[gCol.GUEST_NAME - 1];
+      const roomNumber = overrides.roomNumber || values[gCol.ROOM_NUMBER - 1];
+      let checkInDate = overrides.checkInDate || values[gCol.CHECK_IN_DATE - 1];
+      let checkOutDate = overrides.checkOutDate || values[gCol.CHECK_OUT_DATE - 1];
+
+      if (typeof checkInDate === 'string' && checkInDate) {
+        const tmp = new Date(checkInDate);
+        if (!isNaN(tmp.getTime())) checkInDate = tmp;
+      }
+      if (typeof checkOutDate === 'string' && checkOutDate) {
+        const tmp = new Date(checkOutDate);
+        if (!isNaN(tmp.getTime())) checkOutDate = tmp;
+      }
       const nightsVal = parseInt(values[gCol.NUMBER_OF_NIGHTS - 1], 10) || 0;
       if (!checkOutDate && checkInDate && nightsVal) {
         const tmp = new Date(checkInDate);
