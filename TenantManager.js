@@ -290,7 +290,7 @@ const TenantManager = {
         return;
       }
 
-      const html = HtmlService.createHtmlOutput(`
+      const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
 <div class="container">
   <h3>Record Rent Payment</h3>
   <form id="payForm">
@@ -337,7 +337,7 @@ const TenantManager = {
   }
 </script>
         </div>
-      `).setWidth(350).setHeight(420);
+      `)).setWidth(350).setHeight(420);
 
       ui.showModalDialog(html, 'Record Payment');
 
@@ -416,7 +416,7 @@ const TenantManager = {
         `<option value="${room.number}">Room ${room.number} - ${Utils.formatCurrency(room.rent)}/month</option>`
       ).join('');
 
-      const html = HtmlService.createHtmlOutput(`
+      const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
 <div class="container">
   <h3>Process Tenant Move-In</h3>
   <label>Applicant</label>
@@ -491,7 +491,7 @@ const TenantManager = {
       .completeMoveIn(data);
   }
 </script>
-      `)
+      `))
         .setWidth(500)
         .setHeight(650);
 
@@ -593,7 +593,7 @@ const TenantManager = {
 
       const options = tenants.map((t, i) => `<option value="${i}">${t.name}</option>`).join('');
 
-      const html = HtmlService.createHtmlOutput(`
+      const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
 <div class="container">
   <h3>Process Tenant Move-Out</h3>
   <form id="moveOutForm">
@@ -630,7 +630,7 @@ const TenantManager = {
       .simpleMoveOut({ rowNumber: t.rowNumber, moveOutDate: d });
   }
 </script>
-      `).setWidth(400).setHeight(260);
+      `)).setWidth(400).setHeight(260);
 
       ui.showModalDialog(html, 'Process Move-Out');
 
@@ -760,7 +760,7 @@ const TenantManager = {
       const data = SheetManager.getAllData(CONFIG.SHEETS.TENANTS);
       const stats = this.calculateTenantStats(data);
       
-      const html = HtmlService.createHtmlOutput(`
+      const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
         <div style="font-family: Arial, sans-serif; padding: 20px;">
           <h2>🏠 Tenant Dashboard</h2>
           
@@ -813,7 +813,7 @@ const TenantManager = {
             </div>
           ` : ''}
         </div>
-      `)
+      `))
         .setWidth(800)
         .setHeight(600);
       

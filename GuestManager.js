@@ -105,7 +105,7 @@ const GuestManager = {
         }
       });
       
-      const html = HtmlService.createHtmlOutput(`
+      const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
         <div style="font-family: Arial, sans-serif; padding: 20px;">
           <h2>📅 Today's Guest Activity - ${Utils.formatDate(today, 'MMMM dd, yyyy')}</h2>
           
@@ -166,7 +166,7 @@ const GuestManager = {
             <button onclick="google.script.run.showOccupancyCalendar()" style="margin: 5px; padding: 10px 20px;">Occupancy Calendar</button>
           </div>
         </div>
-      `)
+      `))
         .setWidth(800)
         .setHeight(600);
       
@@ -195,7 +195,7 @@ const GuestManager = {
       };
       const options = data.map((row, i) => `<option value="${i}">${row[gCol.GUEST_NAME - 1]}</option>`).join('');
 
-      const html = HtmlService.createHtmlOutput(`
+      const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
         <div class="gm-container">
           <h3>Process Check-In</h3>
           <label for="guestSelect">Guest:</label>
@@ -265,7 +265,7 @@ const GuestManager = {
             });
           </script>
         </div>
-      `).setWidth(420).setHeight(520);
+      `)).setWidth(420).setHeight(520);
 
       SpreadsheetApp.getUi().showModalDialog(html, 'Process Check-In');
 
@@ -653,7 +653,7 @@ const GuestManager = {
 
       const options = occupied.map(o => `<option value="${o.row}">${o.guest} - Room ${o.room}</option>`).join('');
 
-      const html = HtmlService.createHtmlOutput(`
+      const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
         <div class="gm-container">
           <h3>Process Check-Out</h3>
           <label for="guestSelect">Guest:</label>
@@ -699,7 +699,7 @@ const GuestManager = {
             });
           </script>
         </div>
-      `).setWidth(420).setHeight(460);
+      `)).setWidth(420).setHeight(460);
 
       SpreadsheetApp.getUi().showModalDialog(html, 'Process Check-Out');
 
@@ -794,7 +794,7 @@ const GuestManager = {
       
       const analytics = this.calculateGuestAnalytics(bookingData, roomData);
       
-      const html = HtmlService.createHtmlOutput(`
+      const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
         <div style="font-family: Arial, sans-serif; padding: 20px;">
           <h2>📊 Guest Room Analytics</h2>
           
@@ -874,7 +874,7 @@ const GuestManager = {
             <li>Create package deals for extended stays</li>
           </ul>
         </div>
-      `)
+      `))
         .setWidth(800)
         .setHeight(700);
       

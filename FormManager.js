@@ -515,7 +515,7 @@ Thank you for being a valued resident!
         formLinksHtml = '<p style="text-align: center; color: #666;">No forms found. Please create forms first using "Create All Forms".</p>';
       }
       
-      const html = HtmlService.createHtmlOutput(`
+      const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
         <div style="font-family: Arial, sans-serif; padding: 20px;">
           <h2>🔗 Form Links - Belvedere White House Rental</h2>
           
@@ -537,7 +537,7 @@ Thank you for being a valued resident!
             </button>
           </div>
         </div>
-      `)
+      `))
         .setWidth(700)
         .setHeight(600);
       

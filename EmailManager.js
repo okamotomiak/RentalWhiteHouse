@@ -634,7 +634,7 @@ Parsonage Management System`;
    * Configure email templates (show current templates)
    */
   configureEmailTemplates: function() {
-    const html = HtmlService.createHtmlOutput(`
+    const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
       <div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
         <h2>📧 Email Template Configuration</h2>
         
@@ -693,7 +693,7 @@ Parsonage Management System`;
           </button>
         </div>
       </div>
-    `)
+    `))
       .setWidth(600)
       .setHeight(500);
     
