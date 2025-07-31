@@ -92,7 +92,10 @@ const TriggerManager = {
       
       SpreadsheetApp.getUi().alert(
         'Triggers Setup Complete',
-        'Automated triggers configured:\n• Daily payment checks\n• Monthly rent reminders\n• Weekly late payment alerts',
+        'Automated triggers configured:\n' +
+        '• Daily payment checks at 8:00 AM\n' +
+        '• Monthly rent reminders on the 1st at 9:00 AM\n' +
+        '• Weekly late payment alerts every Monday at 9:00 AM',
         SpreadsheetApp.getUi().ButtonSet.OK
       );
       
@@ -159,20 +162,73 @@ const SettingsManager = {
   },
   
   customizeSystemSettings: function() {
-    const ui = SpreadsheetApp.getUi();
-    
-    const propertyResponse = ui.prompt(
-      'Property Settings',
-      'Enter property name:',
-      ui.ButtonSet.OK_CANCEL
-    );
-    
-    if (propertyResponse.getSelectedButton() === ui.Button.OK) {
-      const newName = propertyResponse.getResponseText();
-      if (newName) {
-        CONFIG.SYSTEM.PROPERTY_NAME = newName;
-        ui.alert('Property name updated to: ' + newName);
-      }
+    try {
+      const settings = SheetManager.getAllData(CONFIG.SHEETS.SETTINGS);
+      const rows = settings.map((row, i) => `
+        <tr>
+          <td>${row[0]}</td>
+          <td><input type="text" name="v${i}" value="${row[1] || ''}" style="width:100%"></td>
+          <td>${row[2]}</td>
+          <td>${row[3]}</td>
+        </tr>
+      `).join('');
+
+      const html = HtmlService.createHtmlOutput(`
+        <form id="settingsForm">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr><th>Key</th><th>Value</th><th>Description</th><th>Category</th></tr>
+            ${rows}
+          </table>
+          <br>
+          <button type="button" onclick="save()">Save Settings</button>
+        </form>
+        <script>
+          function save(){
+            const values = Array.from(document.querySelectorAll('input[name^=v]')).map(i => i.value);
+            google.script.run.saveSystemSettings(values);
+            google.script.host.close();
+          }
+        </script>
+      `).setWidth(700).setHeight(500);
+
+      SpreadsheetApp.getUi().showModalDialog(html, 'Customize System Settings');
+    } catch(err) {
+      Logger.log('Error showing settings panel: ' + err.toString());
+    }
+  },
+
+  saveSystemSettings: function(values) {
+    try {
+      const sheet = SheetManager.getSheet(CONFIG.SHEETS.SETTINGS);
+      values.forEach((val, i) => {
+        const row = i + 2;
+        sheet.getRange(row, 2).setValue(val);
+        sheet.getRange(row, 5).setValue(new Date());
+        sheet.getRange(row, 6).setValue(Session.getActiveUser().getEmail());
+        const key = sheet.getRange(row, 1).getValue();
+        switch (key) {
+          case 'property_name':
+            CONFIG.SYSTEM.PROPERTY_NAME = val;
+            break;
+          case 'manager_email':
+            CONFIG.SYSTEM.MANAGER_EMAIL = val;
+            break;
+          case 'time_zone':
+            CONFIG.SYSTEM.TIME_ZONE = val;
+            break;
+          case 'late_fee_days':
+            CONFIG.SYSTEM.LATE_FEE_DAYS = parseFloat(val);
+            break;
+          case 'late_fee_amount':
+            CONFIG.SYSTEM.LATE_FEE_AMOUNT = parseFloat(val);
+            break;
+          case 'currency':
+            CONFIG.SYSTEM.CURRENCY = val;
+            break;
+        }
+      });
+    } catch(err) {
+      Logger.log('Error saving settings: ' + err.toString());
     }
   }
 };
@@ -749,7 +805,6 @@ function onOpen() {
   
   ui.createMenu('🏠 Parsonage Manager')
     .addItem('🚀 Initialize System', 'initializeCompleteSystem')
-    .addItem('⚙️ System Settings', 'showSystemSettings')
     .addItem('📅 Occupancy Calendar', 'showOccupancyCalendar')
     .addSeparator()
     
@@ -784,14 +839,11 @@ function onOpen() {
     
     .addSubMenu(ui.createMenu('⚙️ System Setup')
       .addItem('🔔 Setup Automated Triggers', 'setupAllSystemTriggers')
-      .addItem('📧 Configure Email Templates', 'configureEmailTemplates')
       .addItem('🎨 Customize System Settings', 'customizeSystemSettings')
       .addItem('📤 Export Data Backup', 'exportSystemBackup')
       .addItem('📥 Import Data', 'importSystemData'))
     
     .addSeparator()
-    .addItem('🆘 Help & Support', 'showHelpDocumentation')
-    .addItem('🧪 Test System', 'runSystemTests')
     
     .addToUi();
 }
@@ -819,7 +871,10 @@ function initializeCompleteSystem() {
     
     // Setup triggers
     TriggerManager.setupAllTriggers();
-    
+
+    // Automatically create all Google Forms
+    FormManager.createAllSystemForms();
+
     // Create sample data (including missing sample data)
     DataManager.createSampleData();
     DataManager.createSampleMaintenanceRequests();
@@ -837,8 +892,7 @@ function initializeCompleteSystem() {
       `Next steps:\n` +
       `1. Review the sample data in all sheets\n` +
       `2. Customize system settings\n` +
-      `3. Create your forms\n` +
-      `4. Start managing your property!`,
+      `3. Start managing your property!`,
       ui.ButtonSet.OK
     );
     
@@ -1142,6 +1196,7 @@ const Utils = {
 // Proxy functions for menu items that might be missing
 function setupAllSystemTriggers() { TriggerManager.setupAllTriggers(); }
 function customizeSystemSettings() { SettingsManager.customizeSystemSettings(); }
+function saveSystemSettings(values) { SettingsManager.saveSystemSettings(values); }
 function exportSystemBackup() { DataManager.exportSystemData(); }
 function importSystemData() { DataManager.importSystemData(); }
 function configureEmailTemplates() { EmailManager.configureEmailTemplates(); }
