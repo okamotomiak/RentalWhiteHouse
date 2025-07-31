@@ -787,6 +787,42 @@ const GuestManager = {
       handleSystemError(error, 'processRoomCheckOut');
     }
   },
+
+  /**
+   * Process all check-outs scheduled for today
+   */
+  processAllCheckOuts: function() {
+    try {
+      const sheet = SheetManager.getSheet(CONFIG.SHEETS.GUEST_ROOMS);
+      const data = sheet.getDataRange().getValues();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      let processed = 0;
+
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        const status = row[this.ROOM_COL.STATUS - 1];
+        const co = row[this.ROOM_COL.CHECK_OUT_DATE - 1];
+        const coDate = co ? new Date(co) : null;
+        if (status === 'Occupied' && coDate) {
+          coDate.setHours(0, 0, 0, 0);
+          if (coDate.getTime() === today.getTime()) {
+            this.processRoomCheckOut(i + 1);
+            processed++;
+          }
+        }
+      }
+
+      SpreadsheetApp.getUi().alert(
+        'Check-Outs Processed',
+        `Processed ${processed} check-out${processed === 1 ? '' : 's'}.`,
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
+
+    } catch (error) {
+      handleSystemError(error, 'processAllCheckOuts');
+    }
+  },
   
   /**
    * Show guest room analytics
