@@ -1469,6 +1469,82 @@ const FinancialManager = {
     } catch (error) {
       handleSystemError(error, 'exportFinancialDataRange');
     }
+  },
+
+  /**
+   * Show a form to manually add a budget transaction
+   */
+  showAddBudgetEntryPanel: function() {
+    const html = HtmlService.createHtmlOutput(`
+      <div style="font-family: Arial, sans-serif; padding:20px;">
+        <h3>Add Budget Entry</h3>
+        <form id="entryForm">
+          <label>Date</label>
+          <input type="date" id="date" name="date" required value="${Utils.formatDate(new Date(), 'yyyy-MM-dd')}"><br>
+          <label>Type</label>
+          <select id="type" name="type" style="width:100%">
+            <option value="Income">Income</option>
+            <option value="Expense">Expense</option>
+          </select><br>
+          <label>Description</label>
+          <input type="text" id="desc" name="desc" required style="width:100%"><br>
+          <label>Amount</label>
+          <input type="number" id="amount" name="amount" step="0.01" required style="width:100%"><br>
+          <label>Category</label>
+          <input type="text" id="category" name="category" style="width:100%"><br>
+          <label>Payment Method</label>
+          <input type="text" id="method" name="method" style="width:100%"><br>
+          <label>Reference</label>
+          <input type="text" id="ref" name="reference" style="width:100%"><br>
+          <label>Tenant/Guest</label>
+          <input type="text" id="tenant" name="tenant" style="width:100%"><br>
+          <div style="text-align:right;margin-top:15px;">
+            <button type="button" onclick="submitEntry()">Add</button>
+            <button type="button" onclick="google.script.host.close()">Cancel</button>
+          </div>
+        </form>
+        <script>
+          function submitEntry(){
+            const f=document.getElementById('entryForm');
+            if(!f.checkValidity()){f.reportValidity();return;}
+            const data={
+              date:f.date.value,
+              type:f.type.value,
+              description:f.desc.value,
+              amount:f.amount.value,
+              category:f.category.value,
+              paymentMethod:f.method.value,
+              reference:f.reference.value,
+              tenant:f.tenant.value
+            };
+            google.script.run.withSuccessHandler(()=>{google.script.host.close();}).addBudgetEntry(data);
+          }
+        </script>
+      </div>
+    `).setWidth(360).setHeight(520);
+    SpreadsheetApp.getUi().showModalDialog(html,'Add Budget Entry');
+  },
+
+  /**
+   * Add a manual entry to the budget sheet
+   */
+  addBudgetEntry: function(data) {
+    try {
+      const amount = parseFloat(data.amount) || 0;
+      const signedAmount = data.type === 'Expense' ? -Math.abs(amount) : Math.abs(amount);
+      this.logPayment({
+        date: new Date(data.date),
+        type: data.type,
+        description: data.description,
+        amount: signedAmount,
+        category: data.category,
+        paymentMethod: data.paymentMethod,
+        reference: data.reference,
+        tenant: data.tenant
+      });
+    } catch(error) {
+      handleSystemError(error, 'addBudgetEntry');
+    }
   }
 };
 

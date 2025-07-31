@@ -775,6 +775,7 @@ function onOpen() {
     
     .addSubMenu(ui.createMenu('📊 Financial Reports')
       .addItem('📊 Financial Dashboard', 'showFinancialDashboard')
+      .addItem('➕ Add Budget Entry', 'showAddBudgetEntryPanel')
       .addItem('📥 Export Data', 'showExportOptions'))
     
     .addSubMenu(ui.createMenu('📋 Forms & Documents')
@@ -1190,6 +1191,8 @@ function generateTaxReport() { FinancialManager.generateTaxReport(); }
 function exportFinancialData() { FinancialManager.exportFinancialData(); }
 function showFinancialDashboard() { FinancialManager.showFinancialDashboard(); }
 function showExportOptions() { FinancialManager.showExportOptions(); }
+function showAddBudgetEntryPanel() { FinancialManager.showAddBudgetEntryPanel(); }
+function addBudgetEntry(data) { FinancialManager.addBudgetEntry(data); }
 
 // Initialize system when script loads
 Logger.log('Parsonage Management System v2.0 loaded successfully');
