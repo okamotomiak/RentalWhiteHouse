@@ -57,7 +57,7 @@ const FinancialManager = {
       const data = SheetManager.getAllData(CONFIG.SHEETS.BUDGET);
       const report = this.analyzeFinancialData(data, monthStart, monthEnd);
       
-      const html = HtmlService.createHtmlOutput(`
+      const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
         <div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
           <h2>💰 Monthly Financial Report - ${monthYear}</h2>
           
@@ -128,7 +128,7 @@ const FinancialManager = {
             <button onclick="google.script.run.exportFinancialData()" style="margin: 5px; padding: 10px 20px;">Export Data</button>
           </div>
         </div>
-      `)
+      `))
         .setWidth(900)
         .setHeight(700);
       
@@ -249,7 +249,7 @@ const FinancialManager = {
       const incomeChange = previousAnalysis.totalIncome > 0 ? 
         ((currentAnalysis.totalIncome - previousAnalysis.totalIncome) / previousAnalysis.totalIncome * 100) : 0;
       
-      const html = HtmlService.createHtmlOutput(`
+      const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
         <div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
           <h2>📈 Revenue Analysis Dashboard</h2>
           
@@ -357,7 +357,7 @@ const FinancialManager = {
             <button onclick="google.script.run.showProfitabilityDashboard()" style="margin: 5px; padding: 10px 20px;">Profitability Analysis</button>
           </div>
         </div>
-      `)
+      `))
         .setWidth(1000)
         .setHeight(800);
       
@@ -426,7 +426,7 @@ const FinancialManager = {
       const data = SheetManager.getAllData(CONFIG.SHEETS.BUDGET);
       const taxData = this.prepareTaxData(data, yearStart, yearEnd);
       
-      const html = HtmlService.createHtmlOutput(`
+      const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
         <div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
           <h2>📋 Tax Report - ${taxYear}</h2>
           
@@ -513,7 +513,7 @@ const FinancialManager = {
             </button>
           </div>
         </div>
-      `)
+      `))
         .setWidth(800)
         .setHeight(700);
       
@@ -579,7 +579,7 @@ const FinancialManager = {
       
       const occupancyStats = this.calculateOccupancyStats(tenantData, guestRoomData, guestBookingData);
       
-      const html = HtmlService.createHtmlOutput(`
+      const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
         <div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
           <h2>🏠 Occupancy Analytics</h2>
           
@@ -650,7 +650,7 @@ const FinancialManager = {
             <button onclick="google.script.run.showProfitabilityDashboard()" style="margin: 5px; padding: 10px 20px;">Profitability Analysis</button>
           </div>
         </div>
-      `)
+      `))
         .setWidth(800)
         .setHeight(600);
       
@@ -799,7 +799,7 @@ const FinancialManager = {
       const quarterlyMetrics = this.calculateProfitabilityMetrics(data, quarterStart, now);
       const yearlyMetrics = this.calculateProfitabilityMetrics(data, yearStart, now);
       
-      const html = HtmlService.createHtmlOutput(`
+      const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
         <div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
           <h2>💡 Profitability Dashboard</h2>
           
@@ -867,7 +867,7 @@ const FinancialManager = {
             <button onclick="google.script.run.exportFinancialData()" style="margin: 5px; padding: 10px 20px;">Export Financial Data</button>
           </div>
         </div>
-      `)
+      `))
         .setWidth(900)
         .setHeight(700);
       
@@ -1361,7 +1361,7 @@ const FinancialManager = {
     try {
       const dash = this.gatherDashboardData();
 
-      const html = HtmlService.createHtmlOutput(`
+      const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
         <style>
           .fd-tab{display:none;}
           .fd-tab.active{display:block;}
@@ -1402,7 +1402,7 @@ const FinancialManager = {
             document.getElementById(id).classList.add('active');
           }
         </script>
-      `).setWidth(1000).setHeight(800);
+      `)).setWidth(1000).setHeight(800);
 
       SpreadsheetApp.getUi().showModalDialog(html, 'Financial Dashboard');
     } catch (error) {
@@ -1414,7 +1414,7 @@ const FinancialManager = {
    * Show unified export options
    */
   showExportOptions: function() {
-    const html = HtmlService.createHtmlOutput(`
+    const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
       <div style="font-family: Arial, sans-serif; padding:20px;">
         <h3>Export Financial Data</h3>
         <p>
@@ -1435,7 +1435,7 @@ const FinancialManager = {
           }
         </script>
       </div>
-    `).setWidth(400).setHeight(220);
+    `)).setWidth(400).setHeight(220);
     SpreadsheetApp.getUi().showModalDialog(html, 'Export Options');
   },
 
@@ -1475,7 +1475,7 @@ const FinancialManager = {
    * Show a form to manually add a budget transaction
    */
   showAddBudgetEntryPanel: function() {
-    const html = HtmlService.createHtmlOutput(`
+    const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
       <div style="font-family: Arial, sans-serif; padding:20px;">
         <h3>Add Budget Entry</h3>
         <form id="entryForm">
@@ -1521,7 +1521,7 @@ const FinancialManager = {
           }
         </script>
       </div>
-    `).setWidth(360).setHeight(520);
+    `)).setWidth(360).setHeight(520);
     SpreadsheetApp.getUi().showModalDialog(html,'Add Budget Entry');
   },
 

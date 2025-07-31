@@ -699,7 +699,7 @@ const DataManager = {
       } else {
         const issueList = issues.map((issue, index) => `${index + 1}. ${issue}`).join('\n');
         
-        const html = HtmlService.createHtmlOutput(`
+        const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
           <div style="font-family: Arial, sans-serif; padding: 20px;">
             <h3>⚠️ Data Integrity Issues Found</h3>
             <p>The following issues were detected:</p>
@@ -713,7 +713,7 @@ const DataManager = {
               <li>Consider implementing data validation rules</li>
             </ul>
           </div>
-        `)
+        `))
           .setWidth(600)
           .setHeight(400);
         

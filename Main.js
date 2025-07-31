@@ -182,7 +182,7 @@ const SettingsManager = {
  */
 const DocumentManager = {
   showDocumentManager: function() {
-    const html = HtmlService.createHtmlOutput(`
+    const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
       <div style="font-family: Arial, sans-serif; padding: 20px;">
         <h2>📋 Document Manager</h2>
         <p>Document management features coming soon!</p>
@@ -195,7 +195,7 @@ const DocumentManager = {
         </ul>
         <button onclick="google.script.run.generateLeaseAgreement()">Generate Lease Agreement</button>
       </div>
-    `)
+    `))
       .setWidth(500)
       .setHeight(400);
     
@@ -304,7 +304,7 @@ const MaintenanceManager = {
         }
       });
       
-      const html = HtmlService.createHtmlOutput(`
+      const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
         <div style="font-family: Arial, sans-serif; padding: 20px;">
           <h2>🔧 Maintenance Requests</h2>
           
@@ -338,7 +338,7 @@ const MaintenanceManager = {
             <button onclick="google.script.run.showMaintenanceDashboard()">Full Dashboard</button>
           </div>
         </div>
-      `)
+      `))
         .setWidth(700)
         .setHeight(500);
       
@@ -432,7 +432,7 @@ const MaintenanceManager = {
 
     const options = rooms.map((r,i) => `<option value="${i}">${r.label}</option>`).join('');
 
-    const html = HtmlService.createHtmlOutput(`
+    const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
       <div style="font-family: Arial, sans-serif; padding:20px;">
         <h2>Create Maintenance Request</h2>
         <label>Room<br>
@@ -542,7 +542,7 @@ const MaintenanceManager = {
         .map(([c,v]) => `<li>${c}: ${Utils.formatCurrency(v)}</li>`)
         .join('');
 
-      const html = HtmlService.createHtmlOutput(`
+      const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
         <div style="font-family: Arial, sans-serif; padding:20px;">
           <h2>📊 Maintenance Dashboard</h2>
           <div style="margin-bottom:10px;text-align:center;">
@@ -587,7 +587,7 @@ const MaintenanceManager = {
             }
           </script>
         </div>
-      `).setWidth(800).setHeight(600);
+      `)).setWidth(800).setHeight(600);
       
       SpreadsheetApp.getUi().showModalDialog(html, 'Maintenance Dashboard');
       
@@ -625,7 +625,7 @@ const MaintenanceManager = {
         .map(([category, cost]) => `<li>${category}: ${Utils.formatCurrency(cost)}</li>`)
         .join('');
       
-      const html = HtmlService.createHtmlOutput(`
+      const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
         <div style="font-family: Arial, sans-serif; padding: 20px;">
           <h2>💰 Maintenance Cost Report</h2>
           
@@ -651,7 +651,7 @@ const MaintenanceManager = {
             Report generated on ${new Date().toLocaleDateString()}
           </p>
         </div>
-      `)
+      `))
         .setWidth(600)
         .setHeight(600);
       
@@ -688,7 +688,7 @@ function showOccupancyCalendar() {
   const bookingData = SheetManager.getAllData(CONFIG.SHEETS.GUEST_BOOKINGS);
   const stats = FinancialManager.calculateOccupancyStats(tenantData, guestData, bookingData);
 
-  const html = HtmlService.createHtmlOutput(`
+  const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
     <div style="font-family: Arial, sans-serif; padding: 20px;">
       <h2>📅 Occupancy Calendar</h2>
 
@@ -704,7 +704,7 @@ function showOccupancyCalendar() {
         ${rows.join('')}
       </table>
     </div>
-  `)
+  `))
     .setWidth(700)
     .setHeight(500);
 
@@ -853,7 +853,7 @@ function initializeCompleteSystem() {
  */
 function showSystemSettings() {
   const settings = SettingsManager.getCurrentSettings();
-  const html = HtmlService.createHtmlOutput(`
+  const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
     <div style="font-family: Arial, sans-serif; padding: 20px;">
       <h2>🏠 ${CONFIG.SYSTEM.PROPERTY_NAME}</h2>
       <h3>System Configuration</h3>
@@ -884,7 +884,7 @@ function showSystemSettings() {
         <button onclick="google.script.run.runSystemTests()" style="margin: 5px; padding: 10px 20px; background: #FF9800; color: white; border: none; border-radius: 4px;">Test System</button>
       </div>
     </div>
-  `)
+  `))
     .setWidth(600)
     .setHeight(500);
   
@@ -895,7 +895,7 @@ function showSystemSettings() {
  * Show Help Documentation
  */
 function showHelpDocumentation() {
-  const html = HtmlService.createHtmlOutput(`
+  const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
     <div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
       <h2>📚 Parsonage Management System Help</h2>
       
@@ -949,7 +949,7 @@ function showHelpDocumentation() {
         </ul>
       </div>
     </div>
-  `)
+  `))
     .setWidth(700)
     .setHeight(600);
   
@@ -1039,7 +1039,7 @@ function runSystemTests() {
     const passCount = testResults.filter(t => t.result === 'PASS').length;
     const totalTests = testResults.length;
     
-    const html = HtmlService.createHtmlOutput(`
+    const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`
       <div style="font-family: Arial, sans-serif; padding: 20px;">
         <h3>🧪 System Test Results</h3>
         
@@ -1066,7 +1066,7 @@ function runSystemTests() {
         
         <p style="text-align: center; margin-top: 20px;"><strong>Test completed:</strong> ${new Date().toLocaleString()}</p>
       </div>
-    `)
+    `))
       .setWidth(600)
       .setHeight(500);
     
@@ -1129,8 +1129,20 @@ const Utils = {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   },
-  
   /**
+   * Wrap HTML content with default styles
+   */
+  wrapWithPanel: function(content) {
+    return `
+      <style>
+        body {background:#f0f4f8;margin:0;padding:0;font-family:Arial,sans-serif;}
+        .panel-wrapper {background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);}
+        button {background:#1976d2;color:#fff;border:none;border-radius:4px;padding:8px 16px;cursor:pointer;}
+        button:hover {background:#115293;}
+      </style>
+      <div class="panel-wrapper">${content}</div>
+    `;
+  },
    * Calculate days between dates
    */
   daysBetween: function(date1, date2) {
@@ -1178,7 +1190,7 @@ function showMaintenanceDashboard() { MaintenanceManager.showMaintenanceDashboar
 function showCreateMaintenanceRequestPanel() { MaintenanceManager.showCreateMaintenanceRequestPanel(); }
 function openWhiteHouseRentAgreement() {
   const url = 'https://docs.google.com/document/d/0Bx6Gh0XDCgyockZ2SmFMZTB2Y2c2MG5fZmE4UE50ejRsaWtN/edit?usp=sharing&ouid=102218108286145696888&resourcekey=0-WJzLkRaudCPWAOqc6Gv50w&rtpof=true&sd=true';
-  const html = HtmlService.createHtmlOutput(`<script>window.open('${url}', '_blank');google.script.host.close();</script>`);
+  const html = HtmlService.createHtmlOutput(Utils.wrapWithPanel(`<script>window.open('${url}', '_blank');google.script.host.close();</script>`));
   SpreadsheetApp.getUi().showModalDialog(html, 'Open Agreement');
 }
 
