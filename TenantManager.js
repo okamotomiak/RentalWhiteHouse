@@ -448,21 +448,17 @@ const TenantManager = {
     <input type="date" name="leaseEndDate">
     <label>Notes</label>
     <textarea name="notes" rows="3"></textarea>
-    <div class="actions">
+    <div style="text-align:right;margin-top:15px;">
       <button type="button" onclick="processMoveIn()">Process</button>
       <button type="button" onclick="google.script.host.close()">Cancel</button>
     </div>
   </form>
 </div>
 <style>
-  .container{font-family:'Segoe UI',sans-serif;width:440px;padding:20px;}
-  h3{margin-top:0;background:#009688;color:#fff;padding:10px;border-radius:6px;text-align:center;}
-  label{display:block;margin-top:12px;font-weight:bold;color:#00695c;}
-  input,select,textarea{width:100%;box-sizing:border-box;padding:8px;border:1px solid #b2dfdb;border-radius:4px;margin-top:4px;}
-  input:focus,select:focus,textarea:focus{outline:none;border-color:#009688;box-shadow:0 0 3px rgba(0,150,136,0.5);}
-  .actions{text-align:right;margin-top:20px;}
-  button{margin-left:5px;padding:8px 16px;background:#009688;color:#fff;border:none;border-radius:4px;cursor:pointer;}
-  button:hover{background:#00796b;}
+  .container{font-family:Arial,sans-serif;width:420px;padding:20px;}
+  label{display:block;margin-top:10px;font-weight:bold;}
+  input,select,textarea{width:100%;box-sizing:border-box;padding:6px;border:1px solid #ccc;border-radius:4px;}
+  button{margin-left:5px;padding:6px 12px;}
 </style>
 <script>
   const apps = ${JSON.stringify(appData)};
@@ -608,21 +604,17 @@ const TenantManager = {
     </select>
     <label>Move-Out Date</label>
     <input type="date" id="moveOutDate" name="date" required value="${Utils.formatDate(new Date(), 'yyyy-MM-dd')}">
-    <div class="actions">
+    <div style="text-align:right;margin-top:15px;">
       <button type="button" onclick="submitMoveOut()">Confirm</button>
       <button type="button" onclick="google.script.host.close()">Cancel</button>
     </div>
   </form>
 </div>
 <style>
-  .container{font-family:'Segoe UI',sans-serif;width:380px;padding:20px;}
-  h3{margin-top:0;background:#009688;color:#fff;padding:10px;border-radius:6px;text-align:center;}
-  label{display:block;margin-top:12px;font-weight:bold;color:#00695c;}
-  input,select{width:100%;box-sizing:border-box;padding:8px;border:1px solid #b2dfdb;border-radius:4px;margin-top:4px;}
-  input:focus,select:focus{outline:none;border-color:#009688;box-shadow:0 0 3px rgba(0,150,136,0.5);}
-  .actions{text-align:right;margin-top:20px;}
-  button{margin-left:5px;padding:8px 16px;background:#009688;color:#fff;border:none;border-radius:4px;cursor:pointer;}
-  button:hover{background:#00796b;}
+  .container{font-family:Arial,sans-serif;width:360px;padding:20px;}
+  label{display:block;margin-top:10px;font-weight:bold;}
+  input,select{width:100%;box-sizing:border-box;padding:6px;border:1px solid #ccc;border-radius:4px;}
+  button{margin-left:5px;padding:6px 12px;}
 </style>
 <script>
   const tenants = ${JSON.stringify(tenants)};
