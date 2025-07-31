@@ -611,6 +611,20 @@ const SheetManager = {
     sheet.appendRow(data);
     return sheet.getLastRow();
   },
+
+  /**
+   * Add multiple rows to sheet in bulk
+   */
+  addRows: function(sheetName, rows) {
+    if (!rows || rows.length === 0) return;
+
+    const sheet = this.getSheet(sheetName);
+    const startRow = sheet.getLastRow() + 1;
+    const numCols = rows[0].length;
+    sheet.getRange(startRow, 1, rows.length, numCols).setValues(rows);
+
+    return sheet.getLastRow();
+  },
   
   /**
    * Update row in sheet

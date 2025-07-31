@@ -993,6 +993,7 @@ const Utils = {
       <div class="panel-wrapper">${content}</div>
     `;
   },
+  /**
    * Calculate days between dates
    */
   daysBetween: function(date1, date2) {
