@@ -1165,7 +1165,7 @@ function processGuestCheckIn() { GuestManager.processGuestCheckIn(); }
 function processGuestCheckOut() { GuestManager.showProcessCheckOutPanel(); }
 function showProcessCheckOutPanel() { GuestManager.showProcessCheckOutPanel(); }
 function showProcessCheckInPanel() { GuestManager.showProcessCheckInPanel(); }
-function processCheckInFromForm(row) { GuestManager.processCheckInFromForm(row); }
+function processCheckInFromForm(row, data) { GuestManager.processCheckInFromForm(row, data); }
 function showGuestRoomAnalytics() { GuestManager.showGuestRoomAnalytics(); }
 
 // Forms & Documents functions
