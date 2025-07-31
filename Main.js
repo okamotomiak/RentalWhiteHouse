@@ -1189,10 +1189,33 @@ const Utils = {
   wrapWithPanel: function(content) {
     return `
       <style>
-        body {background:#f0f4f8;margin:0;padding:0;font-family:Arial,sans-serif;}
-        .panel-wrapper {background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);}
-        button {background:#1976d2;color:#fff;border:none;border-radius:4px;padding:8px 16px;cursor:pointer;}
-        button:hover {background:#115293;}
+        body {
+          background: linear-gradient(135deg,#e0f7fa,#ffffff);
+          margin: 0;
+          padding: 0;
+          font-family: Arial, sans-serif;
+          color: #333;
+        }
+        .panel-wrapper {
+          background: #ffffff;
+          padding: 20px;
+          border-radius: 10px;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+          max-width: 100%;
+        }
+        h1, h2, h3 { color:#1976d2; margin-top:0; }
+        table { border-collapse:collapse; width:100%; }
+        th, td { padding:8px; border:1px solid #e0e0e0; }
+        tr:nth-child(even) { background:#f9f9f9; }
+        button {
+          background: #1976d2;
+          color: #fff;
+          border: none;
+          border-radius: 4px;
+          padding: 8px 16px;
+          cursor: pointer;
+        }
+        button:hover { background:#155a9b; }
       </style>
       <div class="panel-wrapper">${content}</div>
     `;
