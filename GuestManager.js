@@ -694,16 +694,69 @@ const GuestManager = {
    */
   processRoomCheckOut: function(rowNumber) {
     try {
-      const sheet = SheetManager.getSheet(CONFIG.SHEETS.GUEST_ROOMS);
-      const guestName = sheet.getRange(rowNumber, this.ROOM_COL.CURRENT_GUEST).getValue();
-      const roomNum = sheet.getRange(rowNumber, this.ROOM_COL.ROOM_NUMBER).getValue();
+      const roomSheet = SheetManager.getSheet(CONFIG.SHEETS.GUEST_ROOMS);
+      const bookingId = roomSheet.getRange(rowNumber, this.ROOM_COL.BOOKING_ID).getValue();
+      const guestName = roomSheet.getRange(rowNumber, this.ROOM_COL.CURRENT_GUEST).getValue();
+      const roomNum = roomSheet.getRange(rowNumber, this.ROOM_COL.ROOM_NUMBER).getValue();
 
-      sheet.getRange(rowNumber, this.ROOM_COL.STATUS).setValue('Available');
-      sheet.getRange(rowNumber, this.ROOM_COL.CURRENT_GUEST).clearContent();
-      sheet.getRange(rowNumber, this.ROOM_COL.CHECK_IN_DATE).clearContent();
-      sheet.getRange(rowNumber, this.ROOM_COL.CHECK_OUT_DATE).clearContent();
-      sheet.getRange(rowNumber, this.ROOM_COL.BOOKING_STATUS).setValue(CONFIG.STATUS.BOOKING.CHECKED_OUT);
-      sheet.getRange(rowNumber, this.ROOM_COL.LAST_CLEANED).setValue(new Date());
+      // Update booking record if we can locate it
+      if (bookingId) {
+        const bookingRows = SheetManager.findRows(CONFIG.SHEETS.GUEST_BOOKINGS, this.BOOKING_COL.BOOKING_ID, bookingId);
+        if (bookingRows.length > 0) {
+          const bookingSheet = SheetManager.getSheet(CONFIG.SHEETS.GUEST_BOOKINGS);
+          const bRow = bookingRows[0].rowNumber;
+
+          const totalAmount = bookingSheet.getRange(bRow, this.BOOKING_COL.TOTAL_AMOUNT).getValue() || 0;
+          const amountPaidRange = bookingSheet.getRange(bRow, this.BOOKING_COL.AMOUNT_PAID);
+          let amountPaid = amountPaidRange.getValue() || 0;
+          const balance = totalAmount - amountPaid;
+
+          if (balance > 0) {
+            const ui = SpreadsheetApp.getUi();
+            const response = ui.prompt(
+              'Outstanding Balance',
+              `There is an outstanding balance of ${Utils.formatCurrency(balance)}.\nEnter additional payment amount (or 0 to proceed):`,
+              ui.ButtonSet.OK_CANCEL
+            );
+            if (response.getSelectedButton() !== ui.Button.OK) return;
+            const additionalPayment = parseFloat(response.getResponseText()) || 0;
+            if (additionalPayment > 0) {
+              amountPaid += additionalPayment;
+              amountPaidRange.setValue(amountPaid);
+            }
+          }
+
+          bookingSheet.getRange(bRow, this.BOOKING_COL.BOOKING_STATUS).setValue(CONFIG.STATUS.BOOKING.CHECKED_OUT);
+
+          FinancialManager.logPayment({
+            date: new Date(),
+            type: 'Guest Room Income',
+            description: `Guest room rental - ${guestName} (Room ${roomNum})`,
+            amount: amountPaid,
+            category: 'Guest Room',
+            tenant: guestName,
+            reference: bookingId
+          });
+
+          const email = bookingSheet.getRange(bRow, this.BOOKING_COL.EMAIL).getValue();
+          if (email) {
+            EmailManager.sendGuestCheckoutConfirmation(email, {
+              guestName: guestName,
+              roomNumber: roomNum,
+              totalAmount: totalAmount,
+              amountPaid: amountPaid,
+              propertyName: CONFIG.SYSTEM.PROPERTY_NAME
+            });
+          }
+        }
+      }
+
+      roomSheet.getRange(rowNumber, this.ROOM_COL.STATUS).setValue('Available');
+      roomSheet.getRange(rowNumber, this.ROOM_COL.CURRENT_GUEST).clearContent();
+      roomSheet.getRange(rowNumber, this.ROOM_COL.CHECK_IN_DATE).clearContent();
+      roomSheet.getRange(rowNumber, this.ROOM_COL.CHECK_OUT_DATE).clearContent();
+      roomSheet.getRange(rowNumber, this.ROOM_COL.BOOKING_STATUS).setValue(CONFIG.STATUS.BOOKING.CHECKED_OUT);
+      roomSheet.getRange(rowNumber, this.ROOM_COL.LAST_CLEANED).setValue(new Date());
 
       SpreadsheetApp.getUi().alert('Check-Out Complete', `Check-out completed for ${guestName} from room ${roomNum}.`, SpreadsheetApp.getUi().ButtonSet.OK);
 
