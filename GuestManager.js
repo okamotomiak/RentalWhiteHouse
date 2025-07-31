@@ -196,22 +196,30 @@ const GuestManager = {
       const options = data.map((row, i) => `<option value="${i}">${row[gCol.GUEST_NAME - 1]}</option>`).join('');
 
       const html = HtmlService.createHtmlOutput(`
-        <div style="font-family: Arial, sans-serif; padding:20px;">
-          <h3 style="margin-top:0;">Process Check-In</h3>
-          <label>Guest:</label>
-          <select id="guestSelect" onchange="fillFields()" style="width:100%;padding:4px;">
+        <div class="gm-container">
+          <h3>Process Check-In</h3>
+          <label for="guestSelect">Guest:</label>
+          <select id="guestSelect" onchange="fillFields()">
             <option value="">Select...</option>
             ${options}
           </select>
-          <div id="details" style="margin-top:10px;display:none;">
-            <label>Name:</label><input type="text" id="guestName" style="width:100%" readonly><br>
-            <label>Email:</label><input type="text" id="email" style="width:100%" readonly><br>
-            <label>Phone:</label><input type="text" id="phone" style="width:100%" readonly><br>
-            <label>Room:</label><input type="text" id="room" style="width:100%" readonly><br>
-            <label>Check-In:</label><input type="text" id="checkin" style="width:100%" readonly><br>
-            <label>Check-Out:</label><input type="text" id="checkout" style="width:100%" readonly><br>
+          <div id="details">
+            <label>Name:</label><input type="text" id="guestName" readonly><br>
+            <label>Email:</label><input type="text" id="email" readonly><br>
+            <label>Phone:</label><input type="text" id="phone" readonly><br>
+            <label>Room:</label><input type="text" id="room" readonly><br>
+            <label>Check-In:</label><input type="text" id="checkin" readonly><br>
+            <label>Check-Out:</label><input type="text" id="checkout" readonly><br>
           </div>
-          <button id="processBtn" style="margin-top:15px;" disabled>Process Check-In</button>
+          <button id="processBtn" disabled>Process Check-In</button>
+          <style>
+            .gm-container{font-family:Arial,sans-serif;padding:20px;}
+            label{display:block;margin-top:8px;font-weight:bold;}
+            input,select{width:100%;padding:6px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box;}
+            #details{margin-top:10px;display:none;background:#f5f5f5;padding:10px;border:1px solid #ddd;border-radius:4px;}
+            #processBtn{margin-top:15px;padding:10px 20px;background:#4caf50;color:#fff;border:none;border-radius:4px;cursor:pointer;}
+            #processBtn:disabled{background:#ccc;cursor:not-allowed;}
+          </style>
           <script>
             const data = ${JSON.stringify(data)};
             const gCol = ${JSON.stringify(gCol)};
@@ -627,19 +635,27 @@ const GuestManager = {
       const options = occupied.map(o => `<option value="${o.row}">${o.guest} - Room ${o.room}</option>`).join('');
 
       const html = HtmlService.createHtmlOutput(`
-        <div style="font-family: Arial, sans-serif; padding:20px;">
-          <h3 style="margin-top:0;">Process Check-Out</h3>
-          <label>Guest:</label>
-          <select id="guestSelect" onchange="fillFields()" style="width:100%;padding:4px;">
+        <div class="gm-container">
+          <h3>Process Check-Out</h3>
+          <label for="guestSelect">Guest:</label>
+          <select id="guestSelect" onchange="fillFields()">
             <option value="">Select...</option>
             ${options}
           </select>
-          <div id="details" style="margin-top:10px;display:none;">
-            <label>Room:</label><input type="text" id="room" style="width:100%" readonly><br>
-            <label>Check-In:</label><input type="text" id="checkin" style="width:100%" readonly><br>
-            <label>Check-Out:</label><input type="text" id="checkout" style="width:100%" readonly><br>
+          <div id="details">
+            <label>Room:</label><input type="text" id="room" readonly><br>
+            <label>Check-In:</label><input type="text" id="checkin" readonly><br>
+            <label>Check-Out:</label><input type="text" id="checkout" readonly><br>
           </div>
-          <button id="processBtn" style="margin-top:15px;" disabled>Process Check-Out</button>
+          <button id="processBtn" disabled>Process Check-Out</button>
+          <style>
+            .gm-container{font-family:Arial,sans-serif;padding:20px;}
+            label{display:block;margin-top:8px;font-weight:bold;}
+            input,select{width:100%;padding:6px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box;}
+            #details{margin-top:10px;display:none;background:#f5f5f5;padding:10px;border:1px solid #ddd;border-radius:4px;}
+            #processBtn{margin-top:15px;padding:10px 20px;background:#ff9800;color:#fff;border:none;border-radius:4px;cursor:pointer;}
+            #processBtn:disabled{background:#ccc;cursor:not-allowed;}
+          </style>
           <script>
             const data = ${JSON.stringify(occupied)};
             function fillFields(){
