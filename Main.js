@@ -401,10 +401,47 @@ const MaintenanceManager = {
   },
 
   showCreateMaintenanceRequestPanel: function() {
+    const tenantData = SheetManager.getAllData(CONFIG.SHEETS.TENANTS);
+    const guestData = SheetManager.getAllData(CONFIG.SHEETS.GUEST_ROOMS);
+
+    const rooms = [];
+    tenantData.forEach(row => {
+      const num = row[TenantManager.COL.ROOM_NUMBER - 1];
+      if (!num) return;
+      const name = row[TenantManager.COL.TENANT_NAME - 1];
+      const email = row[TenantManager.COL.TENANT_EMAIL - 1];
+      rooms.push({
+        label: `Room ${num}${name ? ' (' + name + ')': ''}`,
+        location: `Room ${num}`,
+        reportedBy: name || '',
+        contact: email || ''
+      });
+    });
+
+    guestData.forEach(row => {
+      const num = row[GuestManager.ROOM_COL.ROOM_NUMBER - 1];
+      if (!num) return;
+      const guest = row[GuestManager.ROOM_COL.CURRENT_GUEST - 1];
+      rooms.push({
+        label: `Guest Room ${num}${guest ? ' (' + guest + ')': ''}`,
+        location: `Guest Room ${num}`,
+        reportedBy: guest || '',
+        contact: ''
+      });
+    });
+
+    const options = rooms.map((r,i) => `<option value="${i}">${r.label}</option>`).join('');
+
     const html = HtmlService.createHtmlOutput(`
       <div style="font-family: Arial, sans-serif; padding:20px;">
         <h2>Create Maintenance Request</h2>
-        <label>Room/Area<br><input id="loc" style="width:100%"></label><br><br>
+        <label>Room<br>
+          <select id="roomSelect" onchange="fillRoom()" style="width:100%">
+            <option value="">Select...</option>
+            ${options}
+          </select>
+        </label><br>
+        <label>Location<br><input id="loc" style="width:100%"></label><br><br>
         <label>Issue Type<br><input id="type" style="width:100%"></label><br><br>
         <label>Priority<br>
           <select id="priority" style="width:100%">
@@ -423,6 +460,15 @@ const MaintenanceManager = {
           <button onclick="google.script.host.close()">Cancel</button>
         </div>
         <script>
+          const rooms = ${JSON.stringify(rooms)};
+          function fillRoom(){
+            const idx = document.getElementById('roomSelect').value;
+            if(idx===''){return;}
+            const r = rooms[idx];
+            document.getElementById('loc').value = r.location;
+            document.getElementById('reported').value = r.reportedBy;
+            document.getElementById('contact').value = r.contact;
+          }
           function submitReq(){
             const data={
               location:document.getElementById('loc').value,
@@ -438,7 +484,7 @@ const MaintenanceManager = {
           }
         </script>
       </div>
-    `).setWidth(400).setHeight(600);
+    `).setWidth(400).setHeight(650);
     SpreadsheetApp.getUi().showModalDialog(html,'New Maintenance Request');
   },
 
@@ -719,7 +765,7 @@ function onOpen() {
     .addSubMenu(ui.createMenu('🛏️ Guest Room Management')
       .addItem('📅 Today\'s Arrivals & Departures', 'showTodayGuestActivity')
       .addItem('✅ Process Check-In', 'showProcessCheckInPanel')
-      .addItem('📤 Process Check-Out', 'showProcessCheckOutPanel')
+      .addItem('📤 Process Check-Out', 'processGuestCheckOut')
       .addItem('📊 Guest Room Analytics', 'showGuestRoomAnalytics'))
     
     .addSubMenu(ui.createMenu('🔧 Maintenance System')
@@ -1060,8 +1106,10 @@ const Utils = {
    * Format currency consistently
    */
   formatCurrency: function(amount) {
-    if (typeof amount !== 'number') return '$0.00';
-    return `${amount.toFixed(2)}`;
+    if (amount === null || amount === undefined || amount === '') return '$0.00';
+    const num = parseFloat(amount);
+    if (isNaN(num)) return '$0.00';
+    return `$${num.toFixed(2)}`;
   },
   
   /**

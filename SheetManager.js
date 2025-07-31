@@ -628,9 +628,9 @@ const SheetManager = {
     const sheet = this.getSheet(sheetName);
     const data = sheet.getDataRange().getValues();
     const matchingRows = [];
-    
+
     for (let i = 1; i < data.length; i++) { // Skip header row
-      if (data[i][columnIndex - 1] === value) {
+      if (String(data[i][columnIndex - 1]) == String(value)) {
         matchingRows.push({
           rowNumber: i + 1,
           data: data[i]

@@ -117,7 +117,8 @@ const TenantManager = {
         if ((paymentStatus === CONFIG.STATUS.PAYMENT.DUE || paymentStatus === CONFIG.STATUS.PAYMENT.OVERDUE) && email) {
           const tenantName = row[this.COL.TENANT_NAME - 1];
           const roomNumber = row[this.COL.ROOM_NUMBER - 1];
-          const rent = row[this.COL.NEGOTIATED_PRICE - 1] || row[this.COL.RENTAL_PRICE - 1];
+          const rentVal = row[this.COL.NEGOTIATED_PRICE - 1] || row[this.COL.RENTAL_PRICE - 1];
+          const rent = parseFloat(rentVal) || 0;
           
           const emailData = {
             tenantName: tenantName,
@@ -223,7 +224,8 @@ const TenantManager = {
         if (roomStatus === CONFIG.STATUS.ROOM.OCCUPIED && email) {
           const tenant = row[this.COL.TENANT_NAME - 1];
           const room = row[this.COL.ROOM_NUMBER - 1];
-          const rent = row[this.COL.NEGOTIATED_PRICE - 1] || row[this.COL.RENTAL_PRICE - 1];
+          const rentVal = row[this.COL.NEGOTIATED_PRICE - 1] || row[this.COL.RENTAL_PRICE - 1];
+          const rent = parseFloat(rentVal) || 0;
           const dueDate = this.calculateRentDueDate();
           
           try {
@@ -395,8 +397,8 @@ const TenantManager = {
       }
 
       const nameIdx = appHeaders['Full Name'] || this.APP_COL.FULL_NAME;
-      const emailIdx = appHeaders['Email'] || this.APP_COL.EMAIL;
-      const phoneIdx = appHeaders['Phone'] || this.APP_COL.PHONE;
+      const emailIdx = appHeaders['Email'] || appHeaders['Email Address'] || this.APP_COL.EMAIL;
+      const phoneIdx = appHeaders['Phone'] || appHeaders['Phone Number'] || this.APP_COL.PHONE;
       const moveInIdx = appHeaders['Desired Move-in Date'] || this.APP_COL.MOVE_IN_DATE;
       const roomIdx = appHeaders['Preferred Room'] || this.APP_COL.PREFERRED_ROOM;
 
