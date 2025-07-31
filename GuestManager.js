@@ -525,7 +525,7 @@ const GuestManager = {
   updateGuestRoomStatus: function(roomNumber, status, guestName, checkInDate, checkOutDate) {
     const sheet = SheetManager.getSheet(CONFIG.SHEETS.GUEST_ROOMS);
     const roomRows = SheetManager.findRows(CONFIG.SHEETS.GUEST_ROOMS, this.ROOM_COL.ROOM_NUMBER, roomNumber);
-    
+
     if (roomRows.length > 0) {
       const rowNumber = roomRows[0].rowNumber;
 
@@ -534,8 +534,17 @@ const GuestManager = {
       sheet.getRange(rowNumber, this.ROOM_COL.CHECK_IN_DATE).setValue(checkInDate || '');
       sheet.getRange(rowNumber, this.ROOM_COL.CHECK_OUT_DATE).setValue(checkOutDate || '');
 
-      // Update last cleaned date when room becomes available
       if (status === 'Available') {
+        sheet.getRange(rowNumber, this.ROOM_COL.BOOKING_ID).clearContent();
+        sheet.getRange(rowNumber, this.ROOM_COL.NUMBER_OF_NIGHTS).clearContent();
+        sheet.getRange(rowNumber, this.ROOM_COL.NUMBER_OF_GUESTS).clearContent();
+        sheet.getRange(rowNumber, this.ROOM_COL.PURPOSE_OF_VISIT).clearContent();
+        sheet.getRange(rowNumber, this.ROOM_COL.SPECIAL_REQUESTS).clearContent();
+        sheet.getRange(rowNumber, this.ROOM_COL.SOURCE).clearContent();
+        sheet.getRange(rowNumber, this.ROOM_COL.TOTAL_AMOUNT).clearContent();
+        sheet.getRange(rowNumber, this.ROOM_COL.PAYMENT_STATUS).clearContent();
+        sheet.getRange(rowNumber, this.ROOM_COL.BOOKING_STATUS).clearContent();
+        sheet.getRange(rowNumber, this.ROOM_COL.NOTES).clearContent();
         sheet.getRange(rowNumber, this.ROOM_COL.LAST_CLEANED).setValue(new Date());
       }
     }
@@ -770,12 +779,7 @@ const GuestManager = {
         }
       }
 
-      roomSheet.getRange(rowNumber, this.ROOM_COL.STATUS).setValue('Available');
-      roomSheet.getRange(rowNumber, this.ROOM_COL.CURRENT_GUEST).clearContent();
-      roomSheet.getRange(rowNumber, this.ROOM_COL.CHECK_IN_DATE).clearContent();
-      roomSheet.getRange(rowNumber, this.ROOM_COL.CHECK_OUT_DATE).clearContent();
-      roomSheet.getRange(rowNumber, this.ROOM_COL.BOOKING_STATUS).setValue(CONFIG.STATUS.BOOKING.CHECKED_OUT);
-      roomSheet.getRange(rowNumber, this.ROOM_COL.LAST_CLEANED).setValue(new Date());
+      this.updateGuestRoomStatus(roomNum, 'Available', '', '', '');
 
       SpreadsheetApp.getUi().alert('Check-Out Complete', `Check-out completed for ${guestName} from room ${roomNum}.`, SpreadsheetApp.getUi().ButtonSet.OK);
 
